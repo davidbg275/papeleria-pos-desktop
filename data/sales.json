@@ -1,1 +1,25 @@
-[]
+[
+  {
+    "id": "3b6303df",
+    "fecha": "2025-10-15T19:37:24.10103952",
+    "items": [
+      {
+        "sku": "FLO012",
+        "nombre": "Flores_de_liston",
+        "cantidadBase": 1.0,
+        "precioUnitario": 10.0,
+        "subtotal": 10.0
+      },
+      {
+        "sku": "FLO012",
+        "nombre": "Flores_de_liston",
+        "cantidadBase": 1.0,
+        "precioUnitario": 10.0,
+        "subtotal": 10.0
+      }
+    ],
+    "total": 20.0,
+    "efectivo": 20.0,
+    "cambio": 0.0
+  }
+]

@@ -1,12 +1,12 @@
 [
   {
     "sku": "P0001",
-    "nombre": "Producto 1",
+    "nombre": "plums",
     "categoria": "Manualidades",
     "unidad": "pza",
     "contenido": 0.0,
     "precio": 6.5,
-    "stock": 12.0
+    "stock": 5.0
   },
   {
     "sku": "P0002",
@@ -15,7 +15,7 @@
     "unidad": "litro",
     "contenido": 0.0,
     "precio": 8.0,
-    "stock": 81.0
+    "stock": 0.0
   },
   {
     "sku": "P0003",
@@ -24,7 +24,7 @@
     "unidad": "hoja",
     "contenido": 0.0,
     "precio": 8.0,
-    "stock": 103.0
+    "stock": 0.0
   },
   {
     "sku": "P0004",
@@ -187,15 +187,6 @@
     "contenido": 0.0,
     "precio": 26.0,
     "stock": 32.0
-  },
-  {
-    "sku": "P0022",
-    "nombre": "Producto 22",
-    "categoria": "Papelería",
-    "unidad": "hoja",
-    "contenido": 0.0,
-    "precio": 27.5,
-    "stock": 91.0
   },
   {
     "sku": "P0023",
@@ -448,5 +439,14 @@
     "contenido": 0.0,
     "precio": 6.0,
     "stock": 45.0
+  },
+  {
+    "sku": "FLO012",
+    "nombre": "Flores_de_liston",
+    "categoria": "Manualidades",
+    "unidad": "pza",
+    "contenido": 0.0,
+    "precio": 10.0,
+    "stock": 8.0
   }
 ]
