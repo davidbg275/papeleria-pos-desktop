@@ -1,0 +1,153 @@
+package com.papeleria.pos.services;
+
+import com.papeleria.pos.models.Product;
+import org.apache.poi.ss.usermodel.Row;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.stream.Collectors;
+
+// Import POI con nombres totalmente calificados para evitar ambigüedades Cell
+public class InventoryService {
+    private final StorageService storage;
+    private final EventBus bus;
+
+    public InventoryService(StorageService storage, EventBus bus) {
+        this.storage = storage;
+        this.bus = bus;
+    }
+
+    public List<Product> list() {
+        return storage.loadProducts();
+    }
+
+    public List<Product> search(String q) {
+        if (q == null || q.isBlank())
+            return list();
+        String s = q.toLowerCase();
+        return list().stream().filter(p -> (p.getSku() != null && p.getSku().toLowerCase().contains(s)) ||
+                (p.getNombre() != null && p.getNombre().toLowerCase().contains(s)) ||
+                (p.getCategoria() != null && p.getCategoria().toLowerCase().contains(s))).collect(Collectors.toList());
+    }
+
+    public java.util.Optional<com.papeleria.pos.models.Product> findBySku(String sku) {
+        java.util.List<com.papeleria.pos.models.Product> all = list();
+        for (com.papeleria.pos.models.Product p : all) {
+            if (p.getSku() != null && p.getSku().equalsIgnoreCase(sku)) {
+                return java.util.Optional.of(p);
+            }
+        }
+        return java.util.Optional.empty();
+    }
+
+
+
+    public void upsert(Product np) {
+        List<Product> all = list();
+        Optional<Product> ex = all.stream().filter(p -> p.getSku().equals(np.getSku())).findFirst();
+        if (ex.isPresent()) {
+            Product e = ex.get();
+            e.setNombre(np.getNombre());
+            e.setCategoria(np.getCategoria());
+            e.setUnidad(np.getUnidad());
+            e.setContenido(np.getContenido());
+            e.setPrecio(np.getPrecio());
+            e.setStock(np.getStock());
+        } else {
+            all.add(np);
+        }
+        storage.saveProducts(all);
+        bus.publish(EventBus.Topic.INVENTORY_CHANGED, null);
+    }
+
+    public void removeBySku(String sku) {
+        List<Product> all = list();
+        all.removeIf(p -> Objects.equals(p.getSku(), sku));
+        storage.saveProducts(all);
+        bus.publish(EventBus.Topic.INVENTORY_CHANGED, null);
+    }
+
+    public void clearAll() {
+        storage.saveProducts(new ArrayList<>());
+        bus.publish(EventBus.Topic.INVENTORY_CHANGED, null);
+    }
+
+    public void adjustStock(String sku, double delta) {
+        List<Product> all = list();
+        for (Product p : all) {
+            if (Objects.equals(p.getSku(), sku)) {
+                p.setStock(Math.max(0, p.getStock() + delta));
+                break;
+            }
+        }
+        storage.saveProducts(all);
+        bus.publish(EventBus.Topic.INVENTORY_CHANGED, null);
+    }
+
+    public int importFromExcel(Path xlsxPath) throws IOException {
+        if (xlsxPath == null || !Files.exists(xlsxPath))
+            throw new IOException("Archivo no encontrado");
+        java.io.InputStream in = Files.newInputStream(xlsxPath);
+        try (org.apache.poi.xssf.usermodel.XSSFWorkbook wb = new org.apache.poi.xssf.usermodel.XSSFWorkbook(in)) {
+            org.apache.poi.xssf.usermodel.XSSFSheet sheet = wb.getSheetAt(0);
+            if (sheet == null)
+                return 0;
+
+            Map<String, Product> map = new LinkedHashMap<>();
+            for (Product p : list())
+                map.put(p.getSku(), p);
+
+            int count = 0;
+            int rowIndex = 0;
+            for (Row row : sheet) {
+                rowIndex++;
+                if (rowIndex == 1)
+                    continue; // header
+                org.apache.poi.ss.usermodel.Cell cSku = row.getCell(0);
+                if (cSku == null)
+                    continue;
+                String sku = cSku.toString().trim();
+                if (sku.isEmpty())
+                    continue;
+
+                String nombre = getString(row, 1);
+                String categoria = getString(row, 2);
+                String unidad = getString(row, 3);
+                double contenido = getDouble(row, 4);
+                double precio = getDouble(row, 5);
+                double stock = getDouble(row, 6);
+
+                Product np = new Product(sku, nombre, categoria, unidad, contenido, precio, stock);
+                map.put(sku, np);
+                count++;
+            }
+            storage.saveProducts(new ArrayList<>(map.values()));
+            bus.publish(EventBus.Topic.INVENTORY_CHANGED, null);
+            return count;
+        }
+    }
+
+    private String getString(Row row, int idx) {
+        org.apache.poi.ss.usermodel.Cell c = row.getCell(idx);
+        return c == null ? "" : c.toString().trim();
+    }
+
+    private double getDouble(Row row, int idx) {
+        org.apache.poi.ss.usermodel.Cell c = row.getCell(idx);
+        if (c == null)
+            return 0.0;
+        try {
+            switch (c.getCellType()) {
+                case NUMERIC:
+                    return c.getNumericCellValue();
+                case STRING:
+                default:
+                    String s = c.toString().trim().replace(",", ".");
+                    return s.isEmpty() ? 0.0 : Double.parseDouble(s);
+            }
+        } catch (Exception e) {
+            return 0.0;
+        }
+    }
+}
