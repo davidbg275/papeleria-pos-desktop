@@ -1,12 +1,12 @@
 [
   {
     "sku": "P0001",
-    "nombre": "plums",
+    "nombre": "Pluma_azul",
     "categoria": "Manualidades",
     "unidad": "pza",
     "contenido": 0.0,
     "precio": 6.5,
-    "stock": 5.0
+    "stock": 40.0
   },
   {
     "sku": "P0002",
@@ -33,7 +33,7 @@
     "unidad": "litro",
     "contenido": 10.0,
     "precio": 9.5,
-    "stock": 48.0
+    "stock": 33.0
   },
   {
     "sku": "P0005",
@@ -69,7 +69,7 @@
     "unidad": "pza",
     "contenido": 10.0,
     "precio": 14.0,
-    "stock": 21.0
+    "stock": 20.0
   },
   {
     "sku": "P0009",
@@ -78,7 +78,7 @@
     "unidad": "pza",
     "contenido": 0.0,
     "precio": 14.0,
-    "stock": 82.0
+    "stock": 81.0
   },
   {
     "sku": "P0010",
@@ -168,7 +168,7 @@
     "unidad": "m",
     "contenido": 0.0,
     "precio": 24.5,
-    "stock": 12.0
+    "stock": 10.0
   },
   {
     "sku": "P0020",
