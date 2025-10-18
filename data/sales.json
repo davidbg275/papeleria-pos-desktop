@@ -215,5 +215,37 @@
     "total": 66.5,
     "efectivo": 70.0,
     "cambio": 3.5
+  },
+  {
+    "id": "2abe447e",
+    "fecha": "2025-10-18T02:51:15.365696175",
+    "items": [
+      {
+        "sku": "P0001",
+        "nombre": "Pluma_azul",
+        "cantidadBase": 1.0,
+        "precioUnitario": 6.5,
+        "subtotal": 6.5
+      }
+    ],
+    "total": 6.5,
+    "efectivo": 7.0,
+    "cambio": 0.5
+  },
+  {
+    "id": "d57a9a33",
+    "fecha": "2025-10-18T02:51:28.576203263",
+    "items": [
+      {
+        "sku": "P0009",
+        "nombre": "Producto 9",
+        "cantidadBase": 1.0,
+        "precioUnitario": 14.0,
+        "subtotal": 14.0
+      }
+    ],
+    "total": 14.0,
+    "efectivo": 15.0,
+    "cambio": 1.0
   }
 ]

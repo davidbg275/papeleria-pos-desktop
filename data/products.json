@@ -6,16 +6,16 @@
     "unidad": "pza",
     "contenido": 0.0,
     "precio": 6.5,
-    "stock": 40.0
+    "stock": 39.0
   },
   {
     "sku": "P0002",
     "nombre": "Producto 2",
     "categoria": "Manualidades",
     "unidad": "litro",
-    "contenido": 0.0,
+    "contenido": 1.0,
     "precio": 8.0,
-    "stock": 0.0
+    "stock": 1.0
   },
   {
     "sku": "P0003",
@@ -78,7 +78,7 @@
     "unidad": "pza",
     "contenido": 0.0,
     "precio": 14.0,
-    "stock": 81.0
+    "stock": 80.0
   },
   {
     "sku": "P0010",

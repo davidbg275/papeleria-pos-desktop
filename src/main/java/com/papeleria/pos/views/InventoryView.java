@@ -29,24 +29,33 @@ public class InventoryView extends VBox {
     private final TableView<Product> table = new TableView<>(backing);
     private final TextField search = new TextField();
 
-    public InventoryView(SessionService session, InventoryService service, EventBus bus){
-        this.session = session; this.service = service; this.bus = bus;
-        setSpacing(12); setPadding(new Insets(10));
+    public InventoryView(SessionService session, InventoryService service, EventBus bus) {
+        this.session = session;
+        this.service = service;
+        this.bus = bus;
+        setSpacing(12);
+        setPadding(new Insets(10));
 
-        Label title = new Label("Inventario"); title.getStyleClass().add("h1");
-        Label sub = new Label("Gestiona el stock y productos de tu papelería"); sub.getStyleClass().add("subtle");
+        Label title = new Label("Inventario");
+        title.getStyleClass().add("h1");
+        Label sub = new Label("Gestiona el stock y productos de tu papelería");
+        sub.getStyleClass().add("subtle");
 
         // KPIs
         HBox kpis = new HBox(12, kpi("Total Productos", String.valueOf(service.list().size()), "📦"),
-                                 kpi("Stock Bajo", String.valueOf(contarBajo()), "⚠️"),
-                                 kpi("Sin Stock", String.valueOf(contarCero()), "⛔"),
-                                 kpi("Valor Total", "$", "💲"));
+                kpi("Stock Bajo", String.valueOf(contarBajo()), "⚠️"),
+                kpi("Sin Stock", String.valueOf(contarCero()), "⛔"),
+                kpi("Valor Total", "$", "💲"));
         // Buscador + acciones
         search.setPromptText("Buscar por nombre o código...");
-        Button btnAddEdit = new Button("Agregar/Editar"); btnAddEdit.getStyleClass().add("primary");
-        Button btnDelete = new Button("Eliminar seleccionado"); btnDelete.getStyleClass().add("ghost");
-        Button btnClearAll = new Button("Eliminar TODO"); btnClearAll.getStyleClass().add("danger");
-        Button btnImport = new Button("Cargar Productos (.xlsx)"); btnImport.getStyleClass().add("info");
+        Button btnAddEdit = new Button("Agregar/Editar");
+        btnAddEdit.getStyleClass().add("primary");
+        Button btnDelete = new Button("Eliminar seleccionado");
+        btnDelete.getStyleClass().add("ghost");
+        Button btnClearAll = new Button("Eliminar TODO");
+        btnClearAll.getStyleClass().add("danger");
+        Button btnImport = new Button("Cargar Productos (.xlsx)");
+        btnImport.getStyleClass().add("info");
 
         HBox actions = new HBox(8, search, new Region(), btnAddEdit, btnDelete, btnClearAll, btnImport);
         HBox.setHgrow(actions.getChildren().get(1), Priority.ALWAYS);
@@ -56,34 +65,60 @@ public class InventoryView extends VBox {
         getChildren().addAll(title, sub, kpis, actions, table);
 
         // Eventos
-        search.textProperty().addListener((o,old,v) -> refresh());
-        bus.subscribe(EventBus.Topic.INVENTORY_CHANGED, ev -> { refresh(); actualizarKpis(kpis); });
+        search.textProperty().addListener((o, old, v) -> refresh());
+        bus.subscribe(EventBus.Topic.INVENTORY_CHANGED, ev -> {
+            refresh();
+            actualizarKpis(kpis);
+        });
 
         // Acciones
-        btnAddEdit.setOnAction(ev -> showEditDialog(table.getSelectionModel().getSelectedItem()));
+        btnAddEdit.setOnAction(ev -> {
+            if (!session.isAdmin()) {
+                getChildren().add(0, AlertBanner.warn("Solo ADMIN puede agregar/editar"));
+                return;
+            }
+            showEditDialog(table.getSelectionModel().getSelectedItem());
+        });
+
         btnDelete.setOnAction(ev -> {
+            if (!session.isAdmin()) {
+                getChildren().add(0, AlertBanner.warn("Solo ADMIN puede eliminar"));
+                return;
+            }
             Product p = table.getSelectionModel().getSelectedItem();
-            if (p != null) service.removeBySku(p.getSku());
+            if (p != null)
+                service.removeBySku(p.getSku());
         });
         btnClearAll.setOnAction(ev -> {
-            if (!session.isAdmin()) { getChildren().add(0, AlertBanner.danger("Solo ADMIN puede eliminar TODO")); return; }
+            if (!session.isAdmin()) {
+                getChildren().add(0, AlertBanner.danger("Solo ADMIN puede eliminar TODO"));
+                return;
+            }
             TextInputDialog d = new TextInputDialog();
             d.setTitle("Confirmación");
             d.setHeaderText("Confirmar eliminación total");
             d.setContentText("Escribe la contraseña de admin para confirmar:");
             Optional<String> ans = d.showAndWait();
-            if (ans.isPresent() && ans.get().equals("admin")) { service.clearAll(); getChildren().add(0, AlertBanner.success("Inventario eliminado")); }
-            else { getChildren().add(0, AlertBanner.warn("Operación cancelada")); }
+            if (ans.isPresent() && ans.get().equals("admin")) {
+                service.clearAll();
+                getChildren().add(0, AlertBanner.success("Inventario eliminado"));
+            } else {
+                getChildren().add(0, AlertBanner.warn("Operación cancelada"));
+            }
         });
         btnImport.setOnAction(ev -> {
+            if (!session.isAdmin()) {
+                getChildren().add(0, AlertBanner.warn("Solo ADMIN puede importar"));
+                return;
+            }
             FileChooser fc = new FileChooser();
             fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel .xlsx", "*.xlsx"));
             File f = fc.showOpenDialog(getScene().getWindow());
-            if (f != null){
+            if (f != null) {
                 try {
                     int n = service.importFromExcel(Path.of(f.getAbsolutePath()));
                     getChildren().add(0, AlertBanner.success("Importados: " + n));
-                } catch (Exception ex){
+                } catch (Exception ex) {
                     getChildren().add(0, AlertBanner.danger("Error importando: " + ex.getMessage()));
                 }
             }
@@ -92,25 +127,40 @@ public class InventoryView extends VBox {
         refresh();
     }
 
-    private HBox kpi(String title, String value, String icon){
-        Label t = new Label(title); t.getStyleClass().add("subtle");
-        Label v = new Label(value); v.setStyle("-fx-font-size: 22px; -fx-font-weight: 900;");
+    private HBox kpi(String title, String value, String icon) {
+        Label t = new Label(title);
+        t.getStyleClass().add("subtle");
+        Label v = new Label(value);
+        v.setStyle("-fx-font-size: 22px; -fx-font-weight: 900;");
         HBox h = new HBox(10, new Label(icon), new VBox(2, t, v));
-        HBox card = new HBox(h); card.getStyleClass().add("kpi"); card.setPadding(new Insets(14)); card.setPrefWidth(220);
+        HBox card = new HBox(h);
+        card.getStyleClass().add("kpi");
+        card.setPadding(new Insets(14));
+        card.setPrefWidth(220);
         return card;
     }
-    private void actualizarKpis(HBox kpis){
-        ((Label)((VBox)((HBox)((HBox)kpis.getChildren().get(0)).getChildren().get(0)).getChildren().get(1)).getChildren().get(1))
+
+    private void actualizarKpis(HBox kpis) {
+        ((Label) ((VBox) ((HBox) ((HBox) kpis.getChildren().get(0)).getChildren().get(0)).getChildren().get(1))
+                .getChildren().get(1))
                 .setText(String.valueOf(service.list().size()));
-        ((Label)((VBox)((HBox)((HBox)kpis.getChildren().get(1)).getChildren().get(0)).getChildren().get(1)).getChildren().get(1))
+        ((Label) ((VBox) ((HBox) ((HBox) kpis.getChildren().get(1)).getChildren().get(0)).getChildren().get(1))
+                .getChildren().get(1))
                 .setText(String.valueOf(contarBajo()));
-        ((Label)((VBox)((HBox)((HBox)kpis.getChildren().get(2)).getChildren().get(0)).getChildren().get(1)).getChildren().get(1))
+        ((Label) ((VBox) ((HBox) ((HBox) kpis.getChildren().get(2)).getChildren().get(0)).getChildren().get(1))
+                .getChildren().get(1))
                 .setText(String.valueOf(contarCero()));
     }
-    private long contarBajo(){ return service.list().stream().filter(p -> p.getStock() > 0 && p.getStock() <= 5).count(); }
-    private long contarCero(){ return service.list().stream().filter(p -> p.getStock() <= 0).count(); }
 
-    private void setupTable(){
+    private long contarBajo() {
+        return service.list().stream().filter(p -> p.getStock() > 0 && p.getStock() <= 5).count();
+    }
+
+    private long contarCero() {
+        return service.list().stream().filter(p -> p.getStock() <= 0).count();
+    }
+
+    private void setupTable() {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         TableColumn<Product, String> cCodigo = new TableColumn<>("Código");
@@ -137,25 +187,39 @@ public class InventoryView extends VBox {
         table.setPrefHeight(520);
     }
 
-    private void showEditDialog(Product editable){
+    private void showEditDialog(Product editable) {
         Dialog<Product> dialog = new Dialog<>();
         dialog.setTitle(editable == null ? "Agregar producto" : "Editar producto");
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-        GridPane grid = new GridPane(); grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(12));
-        TextField sku = new TextField(); TextField nombre = new TextField();
-        TextField categoria = new TextField(); TextField unidad = new TextField();
-        TextField contenido = new TextField(); TextField precio = new TextField(); TextField stock = new TextField();
-        sku.setPromptText("Código (sku)"); nombre.setPromptText("Nombre");
-        categoria.setPromptText("Categoría"); unidad.setPromptText("Unidad (pza, hoja, m...)");
-        contenido.setPromptText("Contenido (0 si no aplica)"); precio.setPromptText("Precio unidad base");
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(12));
+        TextField sku = new TextField();
+        TextField nombre = new TextField();
+        TextField categoria = new TextField();
+        TextField unidad = new TextField();
+        TextField contenido = new TextField();
+        TextField precio = new TextField();
+        TextField stock = new TextField();
+        sku.setPromptText("Código (sku)");
+        nombre.setPromptText("Nombre");
+        categoria.setPromptText("Categoría");
+        unidad.setPromptText("Unidad (pza, hoja, m...)");
+        contenido.setPromptText("Contenido (0 si no aplica)");
+        precio.setPromptText("Precio unidad base");
         stock.setPromptText("Stock unidad base");
 
-        if (editable != null){
-            sku.setText(editable.getSku()); sku.setDisable(true);
-            nombre.setText(editable.getNombre()); categoria.setText(editable.getCategoria());
-            unidad.setText(editable.getUnidad()); contenido.setText(String.valueOf(editable.getContenido()));
-            precio.setText(String.valueOf(editable.getPrecio())); stock.setText(String.valueOf(editable.getStock()));
+        if (editable != null) {
+            sku.setText(editable.getSku());
+            sku.setDisable(true);
+            nombre.setText(editable.getNombre());
+            categoria.setText(editable.getCategoria());
+            unidad.setText(editable.getUnidad());
+            contenido.setText(String.valueOf(editable.getContenido()));
+            precio.setText(String.valueOf(editable.getPrecio()));
+            stock.setText(String.valueOf(editable.getStock()));
         }
 
         grid.addRow(0, new Label("Código"), sku);
@@ -168,7 +232,7 @@ public class InventoryView extends VBox {
 
         dialog.getDialogPane().setContent(grid);
         dialog.setResultConverter(bt -> {
-            if (bt == ButtonType.OK){
+            if (bt == ButtonType.OK) {
                 try {
                     String _sku = sku.getText().trim();
                     String _nombre = nombre.getText().trim();
@@ -177,9 +241,12 @@ public class InventoryView extends VBox {
                     double _cont = Double.parseDouble(contenido.getText().trim());
                     double _pre = Double.parseDouble(precio.getText().trim());
                     double _stk = Double.parseDouble(stock.getText().trim());
-                    if (_sku.isEmpty() || _nombre.isEmpty()) return null;
+                    if (_sku.isEmpty() || _nombre.isEmpty())
+                        return null;
                     return new Product(_sku, _nombre, _cat, _uni, _cont, _pre, _stk);
-                } catch (Exception ex) { return null; }
+                } catch (Exception ex) {
+                    return null;
+                }
             }
             return null;
         });
@@ -187,7 +254,7 @@ public class InventoryView extends VBox {
         result.ifPresent(service::upsert);
     }
 
-    private void refresh(){
+    private void refresh() {
         String q = search.getText();
         List<Product> src = service.search(q);
         backing.setAll(src);

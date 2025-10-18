@@ -121,3 +121,10 @@
 .alert-warn    { -fx-background-color: rgba(245,158,11,.18); -fx-text-fill: #92400E; }
 .alert-danger  { -fx-background-color: rgba(239,68,68,.18);  -fx-text-fill: #7F1D1D; }
 .alert-success { -fx-background-color: rgba(16,185,129,.18); -fx-text-fill: #065F46; }
+
+
+/* etiquetas de stock en cards de ventas */
+.stock { -fx-font-size: 11px; -fx-font-weight: 700; }
+.stock-ok   { -fx-text-fill: #16a34a; } /* verde */
+.stock-low  { -fx-text-fill: #ea580c; } /* naranja */
+.stock-zero { -fx-text-fill: #dc2626; } /* rojo */

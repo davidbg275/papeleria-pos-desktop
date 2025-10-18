@@ -26,7 +26,7 @@ public class MainApp extends Application {
         Stage loginStage = new Stage();
         new LoginView(session).show(loginStage, () -> {
             loginStage.close();
-            MainView main = new MainView(session, inventory, sales, production, bus);
+            MainView main = new MainView(session, inventory, sales, production, bus, storage);
             Scene scene = new Scene(main, 1200, 750);
             scene.getStylesheets().add(getClass().getResource("/css/app.css").toExternalForm());
             primaryStage.setTitle("POS Papelería");

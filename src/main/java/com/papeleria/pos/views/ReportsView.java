@@ -2,6 +2,7 @@ package com.papeleria.pos.views;
 
 import com.papeleria.pos.models.Product;
 import com.papeleria.pos.models.Sale;
+import com.papeleria.pos.services.EventBus;
 import com.papeleria.pos.services.InventoryService;
 import com.papeleria.pos.services.StorageService;
 import javafx.geometry.Insets;
@@ -18,20 +19,25 @@ import java.util.List;
 
 public class ReportsView extends VBox {
 
-    public ReportsView(InventoryService inventory, StorageService storage){
+    public ReportsView(InventoryService inventory, StorageService storage, EventBus bus) {
         setSpacing(12);
         setPadding(new Insets(12));
 
-        Label title = new Label("Reportes y Estadísticas"); title.getStyleClass().add("h1");
-        Label sub = new Label("Análisis de ventas y rendimiento de tu papelería"); sub.getStyleClass().add("subtle");
+        Label title = new Label("Reportes y Estadísticas");
+        title.getStyleClass().add("h1");
+        Label sub = new Label("Análisis de ventas y rendimiento de tu papelería");
+        sub.getStyleClass().add("subtle");
 
         // Barra de rango + export (maquillaje)
         HBox bar = new HBox(8);
         ChoiceBox<String> rango = new ChoiceBox<>();
-        rango.getItems().addAll("Últimos 7 días","Últimos 30 días","Este mes","Año en curso");
+        rango.getItems().addAll("Últimos 7 días", "Últimos 30 días", "Este mes", "Año en curso");
         rango.getSelectionModel().selectFirst();
-        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
-        Label export = new Label("⬇ Exportar"); export.getStyleClass().add("button"); export.getStyleClass().add("ghost");
+        Region sp = new Region();
+        HBox.setHgrow(sp, Priority.ALWAYS);
+        Label export = new Label("⬇ Exportar");
+        export.getStyleClass().add("button");
+        export.getStyleClass().add("ghost");
         bar.getChildren().addAll(rango, sp, export);
 
         // KPIs
@@ -39,8 +45,7 @@ public class ReportsView extends VBox {
                 kpi("Ventas Hoy", "$" + String.format("%.2f", totalVentas(storage))),
                 kpi("Transacciones", String.valueOf(totalTransacciones(storage))),
                 kpi("Ticket Promedio", "$" + String.format("%.2f", ticketPromedio(storage))),
-                kpi("Ganancia Neta", "$" + String.format("%.2f", gananciaSimple(storage)))
-        );
+                kpi("Ganancia Neta", "$" + String.format("%.2f", gananciaSimple(storage))));
 
         // Gráfica Ventas por período (dummy/simple con 7 barras)
         CategoryAxis x = new CategoryAxis();
@@ -52,11 +57,13 @@ public class ReportsView extends VBox {
         ventas.setPrefHeight(240);
         XYChart.Series<String, Number> s = new XYChart.Series<>();
         double base = Math.max(1.0, totalVentas(storage));
-        for (int i=1;i<=7;i++) {
-            s.getData().add(new XYChart.Data<>("D"+i, (base/7.0) * (0.6 + (i%3)*0.2)));
+        for (int i = 1; i <= 7; i++) {
+            s.getData().add(new XYChart.Data<>("D" + i, (base / 7.0) * (0.6 + (i % 3) * 0.2)));
         }
         ventas.getData().add(s);
-        StackPane ventasCard = new StackPane(ventas); ventasCard.getStyleClass().add("card"); ventasCard.setPadding(new Insets(12));
+        StackPane ventasCard = new StackPane(ventas);
+        ventasCard.getStyleClass().add("card");
+        ventasCard.setPadding(new Insets(12));
 
         // Gráfica Productos más vendidos (dummy usando inventario)
         CategoryAxis px = new CategoryAxis();
@@ -69,32 +76,47 @@ public class ReportsView extends VBox {
         List<Product> prods = inventory.list();
         int count = 0;
         for (Product p : prods) {
-            s2.getData().add(new XYChart.Data<>(p.getNombre().length()>10 ? p.getNombre().substring(0,10)+"…" : p.getNombre(), Math.max(0, Math.min(100, p.getStock()))));
-            if (++count==5) break;
+            s2.getData()
+                    .add(new XYChart.Data<>(
+                            p.getNombre().length() > 10 ? p.getNombre().substring(0, 10) + "…" : p.getNombre(),
+                            Math.max(0, Math.min(100, p.getStock()))));
+            if (++count == 5)
+                break;
         }
-        if (count==0){
+        if (count == 0) {
             s2.getData().add(new XYChart.Data<>("Sin datos", 0));
         }
         top.getData().add(s2);
-        StackPane topCard = new StackPane(top); topCard.getStyleClass().add("card"); topCard.setPadding(new Insets(12));
+        StackPane topCard = new StackPane(top);
+        topCard.getStyleClass().add("card");
+        topCard.setPadding(new Insets(12));
 
         // Dos tarjetas inferiores tipo resumen
-        VBox leftBottom = new VBox(12, new Label("Top 5 Productos"), topCard); leftBottom.getStyleClass().add("panel");
-        VBox rightBottom = new VBox(12, new Label("Ventas por Período"), ventasCard); rightBottom.getStyleClass().add("panel");
+        VBox leftBottom = new VBox(12, new Label("Top 5 Productos"), topCard);
+        leftBottom.getStyleClass().add("panel");
+        VBox rightBottom = new VBox(12, new Label("Ventas por Período"), ventasCard);
+        rightBottom.getStyleClass().add("panel");
 
         GridPane grid = new GridPane();
-        grid.setHgap(12); grid.setVgap(12);
+        grid.setHgap(12);
+        grid.setVgap(12);
         grid.add(leftBottom, 0, 0);
         grid.add(rightBottom, 1, 0);
         GridPane.setHgrow(leftBottom, Priority.ALWAYS);
         GridPane.setHgrow(rightBottom, Priority.ALWAYS);
 
         getChildren().addAll(title, sub, bar, kpis, grid);
+        bus.subscribe(EventBus.Topic.SALES_CHANGED,
+                e -> javafx.application.Platform.runLater(() -> refresh(inventory, storage, kpis, ventas, top)));
+        bus.subscribe(EventBus.Topic.INVENTORY_CHANGED,
+                e -> javafx.application.Platform.runLater(() -> refresh(inventory, storage, kpis, ventas, top)));
     }
 
-    private HBox kpi(String title, String value){
-        Label t = new Label(title); t.getStyleClass().add("kpi-title");
-        Label v = new Label(value); v.getStyleClass().add("kpi-value");
+    private HBox kpi(String title, String value) {
+        Label t = new Label(title);
+        t.getStyleClass().add("kpi-title");
+        Label v = new Label(value);
+        v.getStyleClass().add("kpi-value");
         VBox inner = new VBox(4, t, v);
         HBox wrap = new HBox(inner);
         wrap.getStyleClass().add("kpi");
@@ -104,20 +126,63 @@ public class ReportsView extends VBox {
     }
 
     // ====== Cálculos simples a partir de ventas guardadas ======
-    private double totalVentas(StorageService storage){
+    private double totalVentas(StorageService storage) {
         double sum = 0.0;
-        for (Sale s : storage.loadSales()) sum += s.getTotal();
+        for (Sale s : storage.loadSales())
+            sum += s.getTotal();
         return sum;
     }
-    private int totalTransacciones(StorageService storage){
+
+    private int totalTransacciones(StorageService storage) {
         return storage.loadSales().size();
     }
-    private double ticketPromedio(StorageService storage){
+
+    private double ticketPromedio(StorageService storage) {
         int n = storage.loadSales().size();
-        return n==0 ? 0.0 : totalVentas(storage)/n;
+        return n == 0 ? 0.0 : totalVentas(storage) / n;
     }
-    private double gananciaSimple(StorageService storage){
+
+    private double gananciaSimple(StorageService storage) {
         // Estimación rápida 40% margen sobre total (coincide con la tarjeta de ejemplo)
         return totalVentas(storage) * 0.40;
+    }
+
+    // --- NUEVO: método refresh para recalcular KPIs y series ---
+    private void refresh(InventoryService inventory, StorageService storage, HBox kpis, BarChart<String, Number> ventas,
+            BarChart<String, Number> top) {
+        // KPIs
+        ((Label) ((VBox) ((HBox) kpis.getChildren().get(0)).getChildren().get(0)).getChildren().get(1))
+                .setText("$" + String.format("%.2f", totalVentas(storage)));
+        ((Label) ((VBox) ((HBox) kpis.getChildren().get(1)).getChildren().get(0)).getChildren().get(1))
+                .setText(String.valueOf(totalTransacciones(storage)));
+        ((Label) ((VBox) ((HBox) kpis.getChildren().get(2)).getChildren().get(0)).getChildren().get(1))
+                .setText("$" + String.format("%.2f", ticketPromedio(storage)));
+        ((Label) ((VBox) ((HBox) kpis.getChildren().get(3)).getChildren().get(0)).getChildren().get(1))
+                .setText("$" + String.format("%.2f", gananciaSimple(storage)));
+
+        // Ventas últimos 7 (dummy proporcional)
+        ventas.getData().clear();
+        XYChart.Series<String, Number> s = new XYChart.Series<>();
+        double base = Math.max(1.0, totalVentas(storage));
+        for (int i = 1; i <= 7; i++)
+            s.getData().add(new XYChart.Data<>("D" + i, (base / 7.0) * (0.6 + (i % 3) * 0.2)));
+        ventas.getData().add(s);
+
+        // Top productos por stock
+        top.getData().clear();
+        XYChart.Series<String, Number> s2 = new XYChart.Series<>();
+        List<Product> prods = inventory.list();
+        int count = 0;
+        for (Product p : prods) {
+            s2.getData()
+                    .add(new XYChart.Data<>(
+                            p.getNombre().length() > 10 ? p.getNombre().substring(0, 10) + "…" : p.getNombre(),
+                            Math.max(0, Math.min(100, p.getStock()))));
+            if (++count == 5)
+                break;
+        }
+        if (count == 0)
+            s2.getData().add(new XYChart.Data<>("Sin datos", 0));
+        top.getData().add(s2);
     }
 }
