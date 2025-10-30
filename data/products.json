@@ -1,41 +1,5 @@
 [
   {
-    "sku": "P0001",
-    "nombre": "Pluma_azul",
-    "categoria": "Manualidades",
-    "unidad": "pza",
-    "contenido": 0.0,
-    "precio": 6.5,
-    "stock": 39.0
-  },
-  {
-    "sku": "P0002",
-    "nombre": "Producto 2",
-    "categoria": "Manualidades",
-    "unidad": "litro",
-    "contenido": 1.0,
-    "precio": 8.0,
-    "stock": 1.0
-  },
-  {
-    "sku": "P0003",
-    "nombre": "Producto 3",
-    "categoria": "Arte",
-    "unidad": "hoja",
-    "contenido": 0.0,
-    "precio": 8.0,
-    "stock": 0.0
-  },
-  {
-    "sku": "P0004",
-    "nombre": "Producto 4",
-    "categoria": "Oficina",
-    "unidad": "litro",
-    "contenido": 10.0,
-    "precio": 9.5,
-    "stock": 33.0
-  },
-  {
     "sku": "P0005",
     "nombre": "Producto 5",
     "categoria": "Escolar",
