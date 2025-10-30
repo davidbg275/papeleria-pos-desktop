@@ -1,5 +1,6 @@
 package com.papeleria.pos.views;
 
+import com.microsoft.schemas.compatibility.AlternateContentDocument.AlternateContent.Choice;
 import com.papeleria.pos.components.AlertBanner;
 import com.papeleria.pos.models.Product;
 import com.papeleria.pos.models.Sale;
@@ -141,14 +142,14 @@ public class SalesView extends BorderPane {
             Button add = new Button("+");
             add.getStyleClass().addAll("product-add", "primary");
             add.setOnAction(ev -> {
-                Double baseQty = promptCantidad(p);
-                if (baseQty == null)
+                Choice choice = promptVenta(p); // regresa cantidad en UNIDAD DEL PRODUCTO + precio unitario efectivo
+                if (choice == null)
                     return;
-                if (!sales.validarStock(p.getSku(), baseQty)) {
+                if (!sales.validarStock(p.getSku(), choice.qtyInProductUnit)) {
                     flash((VBox) getLeft(), AlertBanner.warn("Stock insuficiente"));
                     return;
                 }
-                addToCart(p, baseQty);
+                addToCartWithPrice(p, choice.qtyInProductUnit, choice.unitPrice);
             });
 
             Region spacer = new Region();
@@ -158,6 +159,12 @@ public class SalesView extends BorderPane {
             card.getChildren().addAll(name, code, stock, bottom);
             grid.getChildren().add(card);
         }
+    }
+
+    private void addToCartWithPrice(Product prod, double qtyInProductUnit, double unitPrice) {
+        SaleItem it = new SaleItem(prod.getSku(), prod.getNombre(), qtyInProductUnit, unitPrice);
+        cart.add(it);
+        recalcTotal();
     }
 
     private String stockText(Product p) {
@@ -222,21 +229,56 @@ public class SalesView extends BorderPane {
 
     // Diálogo para vender por unidad/presentación/múltiplos → SIEMPRE convierte a
     // UNIDAD BASE
-    private Double promptCantidad(Product p) {
-        Dialog<Double> d = new Dialog<>();
-        d.setTitle("Cantidad – " + p.getNombre());
+    // Elección de presentación y cantidad. Devuelve cantidad en UNIDAD DEL PRODUCTO
+    // y precio unitario efectivo.
+    private static class Choice {
+        final double qtyInProductUnit;
+        final double unitPrice;
+
+        Choice(double q, double p) {
+            this.qtyInProductUnit = q;
+            this.unitPrice = p;
+        }
+    }
+
+    private Choice promptVenta(Product p) {
+        Dialog<Choice> d = new Dialog<>();
+        d.setTitle("Vender — " + p.getNombre());
         d.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-        ChoiceBox<String> medida = new ChoiceBox<>();
-        medida.getItems().add("Unidad base (" + p.getUnidad() + ")");
-        if (p.getContenido() > 0)
-            medida.getItems().add("Paquete/Rollo (" + p.getContenido() + " " + p.getUnidad() + ")");
-        String u = p.getUnidad() == null ? "" : p.getUnidad().toLowerCase();
-        if (u.equals("m") || u.equals("metro") || u.equals("metros")) {
-            medida.getItems().add("Metro");
-            medida.getItems().add("Centímetro");
+        // Unidad declarada del producto (la del inventario)
+        String uProd = (p.getUnidad() == null ? "" : p.getUnidad().trim().toLowerCase());
+
+        // Presentaciones visibles "limpias"
+        ChoiceBox<String> present = new ChoiceBox<>();
+        // Opción 1: la unidad del producto tal cual (siempre)
+        String labelUnidadProd = switch (uProd) {
+            case "paquete" -> "Paquete";
+            case "caja" -> "Caja";
+            case "rollo" -> "Rollo";
+            case "m", "metro", "metros" -> "Metro";
+            default -> "Unidad";
+        };
+        present.getItems().add(labelUnidadProd);
+
+        // Opción 2+: si hay contenido,-ofrecer presentaciones menores
+        double contenido = Math.max(0.0, p.getContenido());
+        if (contenido > 0) {
+            // Si el producto es empaquetado/encajado (paquete/caja) → ofrecer "Pieza/Hoja"
+            if (uProd.equals("paquete") || uProd.equals("caja")) {
+                // heurística: si el nombre contiene "hoja" usamos "Hoja"; si no, "Pieza"
+                String lowerName = (p.getNombre() == null ? "" : p.getNombre().toLowerCase());
+                String labelUnidadMenor = lowerName.contains("hoja") ? "Hoja" : "Pieza";
+                present.getItems().add(labelUnidadMenor);
+            }
+            // Si el producto es un "rollo" con N metros → ofrecer Metro y Centímetro
+            if (uProd.equals("rollo")) {
+                if (!present.getItems().contains("Metro"))
+                    present.getItems().add("Metro");
+                present.getItems().add("Centímetro");
+            }
         }
-        medida.getSelectionModel().selectFirst();
+        present.getSelectionModel().selectFirst();
 
         Spinner<Double> cantidad = new Spinner<>(0.01, 1_000_000.0, 1.0, 1.0);
         cantidad.setEditable(true);
@@ -245,7 +287,7 @@ public class SalesView extends BorderPane {
         grid.setHgap(10);
         grid.setVgap(10);
         grid.setPadding(new Insets(10));
-        grid.addRow(0, new Label("Medida"), medida);
+        grid.addRow(0, new Label("Presentación"), present);
         grid.addRow(1, new Label("Cantidad"), cantidad);
         d.getDialogPane().setContent(grid);
 
@@ -253,21 +295,49 @@ public class SalesView extends BorderPane {
             if (bt != ButtonType.OK)
                 return null;
             double q = cantidad.getValue();
-            String m = medida.getValue();
             if (q <= 0)
                 return null;
 
-            if (m.startsWith("Paquete/Rollo")) {
-                if (p.getContenido() <= 0)
+            String sel = present.getValue();
+            double qtyInProductUnit; // SIEMPRE en la unidad del producto (stock y validarStock usan esta)
+            double unitPrice; // precio por la unidad EFECTIVA que se cobra en esta línea
+
+            // Precio base declarado en el producto es por la unidad del producto
+            double pricePerProductUnit = p.getPrecio();
+
+            if (sel.equals("Paquete") && uProd.equals("paquete")
+                    || sel.equals("Caja") && uProd.equals("caja")
+                    || sel.equals("Rollo") && uProd.equals("rollo")
+                    || sel.equals("Unidad")
+                            && !(uProd.equals("paquete") || uProd.equals("caja") || uProd.equals("rollo"))
+                    || sel.equals("Metro") && (uProd.equals("m") || uProd.equals("metro") || uProd.equals("metros"))) {
+                // VENTA EN LA MISMA UNIDAD DEL PRODUCTO
+                qtyInProductUnit = q; // descuento directo del stock
+                unitPrice = pricePerProductUnit; // precio por esa unidad
+            } else if (sel.equals("Pieza") || sel.equals("Hoja")) {
+                // VENTA EN UNIDAD MÁS CHICA que el producto (pieza/hoja dentro de paquete o
+                // caja)
+                if (contenido <= 0)
                     return null;
-                return q * p.getContenido(); // paquete de N unidades base
-            } else if (m.equals("Metro")) {
-                return q; // base en metros
-            } else if (m.equals("Centímetro")) {
-                return q / 100.0; // 100 cm = 1 m
+                qtyInProductUnit = q / contenido; // fracción de paquete/caja
+                unitPrice = pricePerProductUnit / contenido; // precio por pieza/hoja
+            } else if (sel.equals("Metro") && uProd.equals("rollo")) {
+                // VENTA POR METRO (rollo de N metros)
+                if (contenido <= 0)
+                    return null;
+                qtyInProductUnit = q / contenido; // q metros sobre rollos de 'contenido' metros
+                unitPrice = pricePerProductUnit / contenido; // precio por metro
+            } else if (sel.equals("Centímetro") && uProd.equals("rollo")) {
+                if (contenido <= 0)
+                    return null;
+                qtyInProductUnit = (q / 100.0) / contenido; // cm → m → fracción de rollo
+                unitPrice = pricePerProductUnit / (contenido * 100.0); // precio por cm
             } else {
-                return q; // Unidad base
+                // Cualquier otro caso no contemplado
+                return null;
             }
+
+            return new Choice(qtyInProductUnit, unitPrice);
         });
 
         return d.showAndWait().orElse(null);

@@ -1,1 +1,182 @@
-[]
+[
+  {
+    "sku": "PL-001",
+    "nombre": "Pluma Azul BIC Cristal",
+    "categoria": "Escritura",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 4.5,
+    "stock": 0.0
+  },
+  {
+    "sku": "PL-002",
+    "nombre": "Pluma Roja BIC Cristal",
+    "categoria": "Escritura",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 4.5,
+    "stock": 85.0
+  },
+  {
+    "sku": "PL-003",
+    "nombre": "Lápiz No.2 Mirado",
+    "categoria": "Escritura",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 3.0,
+    "stock": 200.0
+  },
+  {
+    "sku": "PL-004",
+    "nombre": "Borrador Pelikan 20",
+    "categoria": "Escritura",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 5.0,
+    "stock": 58.0
+  },
+  {
+    "sku": "HO-001",
+    "nombre": "Hojas Blancas Carta (500 pzas)",
+    "categoria": "Papelería",
+    "unidad": "paquete",
+    "contenido": 500.0,
+    "precio": 110.0,
+    "stock": 28.998
+  },
+  {
+    "sku": "HO-002",
+    "nombre": "Hojas Azules Carta (100 pzas)",
+    "categoria": "Papelería",
+    "unidad": "paquete",
+    "contenido": 100.0,
+    "precio": 30.0,
+    "stock": 40.0
+  },
+  {
+    "sku": "CA-001",
+    "nombre": "Cartulina Blanca",
+    "categoria": "Papelería",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 5.5,
+    "stock": 75.0
+  },
+  {
+    "sku": "CA-002",
+    "nombre": "Cartulina Roja",
+    "categoria": "Papelería",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 5.5,
+    "stock": 60.0
+  },
+  {
+    "sku": "LI-001",
+    "nombre": "Listón Rojo 1cm x 10m",
+    "categoria": "Manualidades",
+    "unidad": "rollo",
+    "contenido": 10.0,
+    "precio": 25.0,
+    "stock": 24.999
+  },
+  {
+    "sku": "LI-002",
+    "nombre": "Listón Azul 2cm x 10m",
+    "categoria": "Manualidades",
+    "unidad": "rollo",
+    "contenido": 10.0,
+    "precio": 28.0,
+    "stock": 18.0
+  },
+  {
+    "sku": "CU-001",
+    "nombre": "Cuaderno Profesional Raya Scribe",
+    "categoria": "Escolar",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 45.0,
+    "stock": 50.0
+  },
+  {
+    "sku": "CU-002",
+    "nombre": "Cuaderno Profesional Cuadro Grande",
+    "categoria": "Escolar",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 45.0,
+    "stock": 55.0
+  },
+  {
+    "sku": "TI-001",
+    "nombre": "Tijeras Escolares Maped",
+    "categoria": "Escolar",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 35.0,
+    "stock": 20.0
+  },
+  {
+    "sku": "PE-001",
+    "nombre": "Pegamento en Barra 40g",
+    "categoria": "Escolar",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 22.0,
+    "stock": 40.0
+  },
+  {
+    "sku": "MA-001",
+    "nombre": "Marcador Permanente Negro",
+    "categoria": "Oficina",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 18.0,
+    "stock": 65.0
+  },
+  {
+    "sku": "MA-002",
+    "nombre": "Marcador Resaltador Amarillo",
+    "categoria": "Oficina",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 15.0,
+    "stock": 80.0
+  },
+  {
+    "sku": "EN-001",
+    "nombre": "Engrapadora Metálica Mediana",
+    "categoria": "Oficina",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 95.0,
+    "stock": 15.0
+  },
+  {
+    "sku": "EN-002",
+    "nombre": "Cajita de grapas 24/6",
+    "categoria": "Oficina",
+    "unidad": "caja",
+    "contenido": 1000.0,
+    "precio": 20.0,
+    "stock": 35.0
+  },
+  {
+    "sku": "CO-001",
+    "nombre": "Corrector Líquido Pelikan",
+    "categoria": "Oficina",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 25.0,
+    "stock": 25.0
+  },
+  {
+    "sku": "RE-001",
+    "nombre": "Regla Plástica 30cm",
+    "categoria": "Escolar",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 10.0,
+    "stock": 70.0
+  }
+]

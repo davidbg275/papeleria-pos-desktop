@@ -247,5 +247,83 @@
     "total": 14.0,
     "efectivo": 15.0,
     "cambio": 1.0
+  },
+  {
+    "id": "372f2554",
+    "fecha": "2025-10-29T19:35:57.941616536",
+    "items": [
+      {
+        "sku": "LI-001",
+        "nombre": "Listón Rojo 1cm x 10m",
+        "cantidadBase": 0.001,
+        "precioUnitario": 0.025,
+        "subtotal": 2.5E-5
+      },
+      {
+        "sku": "HO-001",
+        "nombre": "Hojas Blancas Carta (500 pzas)",
+        "cantidadBase": 1.0,
+        "precioUnitario": 110.0,
+        "subtotal": 110.0
+      },
+      {
+        "sku": "HO-001",
+        "nombre": "Hojas Blancas Carta (500 pzas)",
+        "cantidadBase": 0.002,
+        "precioUnitario": 0.22,
+        "subtotal": 4.4E-4
+      }
+    ],
+    "total": 110.00046499999999,
+    "efectivo": 150.0,
+    "cambio": 39.99953500000001
+  },
+  {
+    "id": "2f50deed",
+    "fecha": "2025-10-29T19:36:29.197009013",
+    "items": [
+      {
+        "sku": "PL-004",
+        "nombre": "Borrador Pelikan 20",
+        "cantidadBase": 1.0,
+        "precioUnitario": 5.0,
+        "subtotal": 5.0
+      }
+    ],
+    "total": 5.0,
+    "efectivo": 10.0,
+    "cambio": 5.0
+  },
+  {
+    "id": "8276bc81",
+    "fecha": "2025-10-29T19:36:41.272936524",
+    "items": [
+      {
+        "sku": "PL-004",
+        "nombre": "Borrador Pelikan 20",
+        "cantidadBase": 1.0,
+        "precioUnitario": 5.0,
+        "subtotal": 5.0
+      }
+    ],
+    "total": 5.0,
+    "efectivo": 12.0,
+    "cambio": 7.0
+  },
+  {
+    "id": "540cf0ce",
+    "fecha": "2025-10-29T19:37:22.95890184",
+    "items": [
+      {
+        "sku": "PL-001",
+        "nombre": "Pluma Azul BIC Cristal",
+        "cantidadBase": 1.0,
+        "precioUnitario": 4.5,
+        "subtotal": 4.5
+      }
+    ],
+    "total": 4.5,
+    "efectivo": 5.0,
+    "cambio": 0.5
   }
 ]
