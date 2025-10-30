@@ -130,8 +130,41 @@ public class SalesView extends BorderPane {
         cPrecio.setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getPrecioUnitario()));
         TableColumn<SaleItem, Number> cSub = new TableColumn<>("Subtotal");
         cSub.setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getSubtotal()));
-        cartTable.getColumns().setAll(cProd, cCant, cPrecio, cSub);
+        TableColumn<SaleItem, Void> cDel = new TableColumn<>("Quitar");
+        cDel.setMinWidth(80);
+        cDel.setCellFactory(col -> new TableCell<>() {
+            final Button btn = new Button("✕");
+            {
+                btn.getStyleClass().add("ghost");
+                btn.setOnAction(e -> {
+                    SaleItem it = getTableView().getItems().get(getIndex());
+                    cart.remove(it);
+                    recalcTotal();
+                });
+            }
+
+            @Override
+            protected void updateItem(Void v, boolean empty) {
+                super.updateItem(v, empty);
+                setGraphic(empty ? null : btn);
+            }
+        });
+        cartTable.getColumns().setAll(cProd, cCant, cPrecio, cSub, cDel);
+
         cartTable.setPrefHeight(380);
+        cartTable.setOnKeyPressed(ev -> {
+            switch (ev.getCode()) {
+                case DELETE, BACK_SPACE -> {
+                    SaleItem sel = cartTable.getSelectionModel().getSelectedItem();
+                    if (sel != null) {
+                        cart.remove(sel);
+                        recalcTotal();
+                    }
+                }
+                default -> {
+                }
+            }
+        });
 
         HBox totalBox = new HBox(8, new Label("Total:"), totalLbl);
         totalLbl.setStyle("-fx-font-size: 22px; -fx-font-weight: 900;");

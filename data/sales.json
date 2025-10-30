@@ -538,5 +538,37 @@
     "total": 0.22,
     "efectivo": 1.0,
     "cambio": 0.78
+  },
+  {
+    "id": "c71b5243",
+    "fecha": "2025-10-29T21:35:02.799080884",
+    "items": [
+      {
+        "sku": "HO-001",
+        "nombre": "Hojas Blancas Carta (500 hojas)",
+        "cantidadBase": 0.002,
+        "precioUnitario": 110.0,
+        "subtotal": 0.22
+      }
+    ],
+    "total": 0.5,
+    "efectivo": 1.0,
+    "cambio": 0.5
+  },
+  {
+    "id": "94920c47",
+    "fecha": "2025-10-29T21:35:40.211171129",
+    "items": [
+      {
+        "sku": "HO-001",
+        "nombre": "Hojas Blancas Carta (500 hojas)",
+        "cantidadBase": 0.002,
+        "precioUnitario": 110.0,
+        "subtotal": 0.22
+      }
+    ],
+    "total": 0.5,
+    "efectivo": 1.0,
+    "cambio": 0.5
   }
 ]
