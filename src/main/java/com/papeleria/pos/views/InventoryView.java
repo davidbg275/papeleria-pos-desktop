@@ -182,7 +182,7 @@ public class InventoryView extends VBox {
 
         TableColumn<Product, String> cCodigo = new TableColumn<>("Código");
         cCodigo.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getSku()));
-        cCodigo.setMinWidth(110);
+        cCodigo.setMinWidth(100);
 
         TableColumn<Product, String> cNombre = new TableColumn<>("Producto");
         cNombre.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getNombre()));
@@ -192,15 +192,57 @@ public class InventoryView extends VBox {
         cCat.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getCategoria()));
         cCat.setMinWidth(140);
 
+        // NUEVOS
+        TableColumn<Product, String> cUnidad = new TableColumn<>("Unidad");
+        cUnidad.setCellValueFactory(d -> new SimpleStringProperty(unidadPretty(d.getValue())));
+        cUnidad.setMinWidth(100);
+
+        TableColumn<Product, String> cContenido = new TableColumn<>("Contenido");
+        cContenido.setCellValueFactory(d -> new SimpleStringProperty(contenidoPretty(d.getValue())));
+        cContenido.setMinWidth(140);
+
+        TableColumn<Product, String> cPresent = new TableColumn<>("Presentaciones");
+        cPresent.setCellValueFactory(d -> new SimpleStringProperty(presentaciones(d.getValue())));
+        cPresent.setMinWidth(200);
+
+        // Stock numérico con color
         TableColumn<Product, Number> cStock = new TableColumn<>("Stock");
         cStock.setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getStock()));
-        cStock.setMinWidth(100);
+        cStock.setMinWidth(90);
+        cStock.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Number v, boolean empty) {
+                super.updateItem(v, empty);
+                if (empty || v == null) {
+                    setText(null);
+                    setStyle("");
+                    return;
+                }
+                double s = v.doubleValue();
+                setText(String.format("%.2f", s));
+                String color = (s <= 0.0) ? "#dc2626" : (s <= 5.0 ? "#ea580c" : "#16a34a");
+                setStyle("-fx-text-fill: " + color + "; -fx-font-weight: 700;");
+            }
+        });
 
-        TableColumn<Product, Number> cPrecio = new TableColumn<>("Precio");
-        cPrecio.setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getPrecio()));
-        cPrecio.setMinWidth(100);
+        // Equivalente en unidad base/pieza/hoja/metro (solo si aplica)
+        TableColumn<Product, String> cEquiv = new TableColumn<>("Equiv. base");
+        cEquiv.setCellValueFactory(d -> new SimpleStringProperty(equivBase(d.getValue())));
+        cEquiv.setMinWidth(140);
 
-        table.getColumns().setAll(cCodigo, cNombre, cCat, cStock, cPrecio);
+        TableColumn<Product, Number> cPrecioUnidad = new TableColumn<>("Precio (unidad)");
+        cPrecioUnidad.setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getPrecio()));
+        cPrecioUnidad.setMinWidth(120);
+
+        TableColumn<Product, Number> cPrecioMenor = new TableColumn<>("Precio (menor)");
+        cPrecioMenor.setCellValueFactory(d -> new SimpleDoubleProperty(precioMenor(d.getValue())));
+        cPrecioMenor.setMinWidth(120);
+
+        table.getColumns().setAll(
+                cCodigo, cNombre, cCat,
+                cUnidad, cContenido, cPresent,
+                cStock, cEquiv,
+                cPrecioUnidad, cPrecioMenor);
         table.setPrefHeight(520);
     }
 
@@ -284,6 +326,87 @@ public class InventoryView extends VBox {
         PauseTransition t = new PauseTransition(Duration.seconds(2.5));
         t.setOnFinished(e -> getChildren().remove(banner));
         t.play();
+    }
+
+    private String unidadPretty(Product p) {
+        String u = safe(p.getUnidad());
+        return switch (u) {
+            case "paquete" -> "Paquete";
+            case "caja" -> "Caja";
+            case "rollo" -> "Rollo";
+            case "m", "metro", "metros" -> "Metro";
+            default -> "Unidad";
+        };
+    }
+
+    private String contenidoPretty(Product p) {
+        double c = p.getContenido();
+        if (c <= 0)
+            return "—";
+        String u = safe(p.getUnidad());
+        if (u.equals("rollo"))
+            return String.format("%.0f m", c); // 10 m por rollo
+        // heurística de nombre para "hoja"/"pieza"
+        String name = safe(p.getNombre());
+        String menor = name.contains("hoja") ? "hojas" : "pzas";
+        return String.format("%.0f %s", c, menor);
+    }
+
+    /**
+     * Lo que verán en ventas: Paquete • Hoja, Caja • Pieza, Rollo • Metro •
+     * Centímetro…
+     */
+    private String presentaciones(Product p) {
+        String u = safe(p.getUnidad());
+        double c = p.getContenido();
+        if (u.equals("paquete")) {
+            return c > 0 ? "Paquete • Hoja" : "Paquete";
+        } else if (u.equals("caja")) {
+            return c > 0 ? "Caja • Pieza" : "Caja";
+        } else if (u.equals("rollo")) {
+            return c > 0 ? "Rollo • Metro • Centímetro" : "Rollo";
+        } else if (u.equals("m") || u.equals("metro") || u.equals("metros")) {
+            return "Metro • Centímetro";
+        } else {
+            return "Unidad";
+        }
+    }
+
+    /**
+     * Equivalente en unidad menor: 28.99 paquetes ≈ 14495 hojas; 24.99 rollos ≈
+     * 249.9 m
+     */
+    private String equivBase(Product p) {
+        double c = p.getContenido();
+        if (c <= 0)
+            return "—";
+        String u = safe(p.getUnidad());
+        double base = p.getStock() * c;
+        if (u.equals("rollo"))
+            return String.format("≈ %.2f m", base);
+        String name = safe(p.getNombre());
+        String menor = name.contains("hoja") ? "hojas" : "pzas";
+        return String.format("≈ %.0f %s", base, menor);
+    }
+
+    /**
+     * Precio por la unidad menor (pieza/hoja/metro/cm) si procede; si no aplica, 0
+     * o igual al base.
+     */
+    private double precioMenor(Product p) {
+        double c = p.getContenido();
+        String u = safe(p.getUnidad());
+        if (c > 0 && (u.equals("paquete") || u.equals("caja") || u.equals("rollo"))) {
+            return p.getPrecio() / c; // por hoja/pieza/metro
+        }
+        if (u.equals("m") || u.equals("metro") || u.equals("metros")) {
+            return p.getPrecio(); // ya es por metro
+        }
+        return 0.0; // no aplica (unidad suelta)
+    }
+
+    private String safe(String s) {
+        return s == null ? "" : s.trim().toLowerCase();
     }
 
 }

@@ -1,24 +1,69 @@
 [
   {
+    "sku": "HO-001",
+    "nombre": "Hojas Blancas Carta (500 hojas)",
+    "categoria": "Papelería",
+    "unidad": "paquete",
+    "contenido": 500.0,
+    "precio": 110.0,
+    "stock": 29.998
+  },
+  {
+    "sku": "HO-002",
+    "nombre": "Hojas Color Azul Carta (100 hojas)",
+    "categoria": "Papelería",
+    "unidad": "paquete",
+    "contenido": 100.0,
+    "precio": 32.0,
+    "stock": 40.0
+  },
+  {
+    "sku": "HO-003",
+    "nombre": "Hojas Color Verde Carta (100 hojas)",
+    "categoria": "Papelería",
+    "unidad": "paquete",
+    "contenido": 100.0,
+    "precio": 32.0,
+    "stock": 25.0
+  },
+  {
+    "sku": "HO-004",
+    "nombre": "Hojas Recicladas Carta (500 hojas)",
+    "categoria": "Papelería",
+    "unidad": "paquete",
+    "contenido": 500.0,
+    "precio": 128.0,
+    "stock": 18.0
+  },
+  {
     "sku": "PL-001",
-    "nombre": "Pluma Azul BIC Cristal",
+    "nombre": "Pluma Azul BIC Cristal (caja 12)",
     "categoria": "Escritura",
-    "unidad": "pieza",
-    "contenido": 1.0,
-    "precio": 4.5,
-    "stock": 0.0
+    "unidad": "caja",
+    "contenido": 12.0,
+    "precio": 48.0,
+    "stock": 20.0
   },
   {
     "sku": "PL-002",
-    "nombre": "Pluma Roja BIC Cristal",
+    "nombre": "Pluma Roja BIC Cristal (caja 12)",
     "categoria": "Escritura",
-    "unidad": "pieza",
-    "contenido": 1.0,
-    "precio": 4.5,
-    "stock": 85.0
+    "unidad": "caja",
+    "contenido": 12.0,
+    "precio": 48.0,
+    "stock": 16.0
   },
   {
     "sku": "PL-003",
+    "nombre": "Pluma Negra BIC Cristal (caja 12)",
+    "categoria": "Escritura",
+    "unidad": "caja",
+    "contenido": 12.0,
+    "precio": 48.0,
+    "stock": 22.0
+  },
+  {
+    "sku": "LA-001",
     "nombre": "Lápiz No.2 Mirado",
     "categoria": "Escritura",
     "unidad": "pieza",
@@ -27,48 +72,12 @@
     "stock": 200.0
   },
   {
-    "sku": "PL-004",
+    "sku": "BO-001",
     "nombre": "Borrador Pelikan 20",
     "categoria": "Escritura",
     "unidad": "pieza",
     "contenido": 1.0,
     "precio": 5.0,
-    "stock": 58.0
-  },
-  {
-    "sku": "HO-001",
-    "nombre": "Hojas Blancas Carta (500 pzas)",
-    "categoria": "Papelería",
-    "unidad": "paquete",
-    "contenido": 500.0,
-    "precio": 110.0,
-    "stock": 28.998
-  },
-  {
-    "sku": "HO-002",
-    "nombre": "Hojas Azules Carta (100 pzas)",
-    "categoria": "Papelería",
-    "unidad": "paquete",
-    "contenido": 100.0,
-    "precio": 30.0,
-    "stock": 40.0
-  },
-  {
-    "sku": "CA-001",
-    "nombre": "Cartulina Blanca",
-    "categoria": "Papelería",
-    "unidad": "pieza",
-    "contenido": 1.0,
-    "precio": 5.5,
-    "stock": 75.0
-  },
-  {
-    "sku": "CA-002",
-    "nombre": "Cartulina Roja",
-    "categoria": "Papelería",
-    "unidad": "pieza",
-    "contenido": 1.0,
-    "precio": 5.5,
     "stock": 60.0
   },
   {
@@ -77,8 +86,8 @@
     "categoria": "Manualidades",
     "unidad": "rollo",
     "contenido": 10.0,
-    "precio": 25.0,
-    "stock": 24.999
+    "precio": 26.0,
+    "stock": 25.0
   },
   {
     "sku": "LI-002",
@@ -86,8 +95,26 @@
     "categoria": "Manualidades",
     "unidad": "rollo",
     "contenido": 10.0,
-    "precio": 28.0,
+    "precio": 29.0,
     "stock": 18.0
+  },
+  {
+    "sku": "LI-003",
+    "nombre": "Listón Dorado 1cm x 20m",
+    "categoria": "Manualidades",
+    "unidad": "rollo",
+    "contenido": 20.0,
+    "precio": 49.0,
+    "stock": 10.0
+  },
+  {
+    "sku": "TE-001",
+    "nombre": "Tela Fieltro Negro (metro)",
+    "categoria": "Manualidades",
+    "unidad": "m",
+    "contenido": 1.0,
+    "precio": 75.0,
+    "stock": 120.0
   },
   {
     "sku": "CU-001",
@@ -136,7 +163,7 @@
   },
   {
     "sku": "MA-002",
-    "nombre": "Marcador Resaltador Amarillo",
+    "nombre": "Resaltador Amarillo",
     "categoria": "Oficina",
     "unidad": "pieza",
     "contenido": 1.0,
@@ -154,29 +181,65 @@
   },
   {
     "sku": "EN-002",
-    "nombre": "Cajita de grapas 24/6",
+    "nombre": "Cajita de grapas 24/6 (1000 pzas)",
     "categoria": "Oficina",
-    "unidad": "caja",
-    "contenido": 1000.0,
+    "unidad": "pieza",
+    "contenido": 1.0,
     "precio": 20.0,
     "stock": 35.0
   },
   {
-    "sku": "CO-001",
-    "nombre": "Corrector Líquido Pelikan",
-    "categoria": "Oficina",
+    "sku": "CA-001",
+    "nombre": "Cartulina Blanca",
+    "categoria": "Papelería",
     "unidad": "pieza",
     "contenido": 1.0,
-    "precio": 25.0,
-    "stock": 25.0
+    "precio": 5.5,
+    "stock": 75.0
   },
   {
-    "sku": "RE-001",
-    "nombre": "Regla Plástica 30cm",
-    "categoria": "Escolar",
+    "sku": "CA-002",
+    "nombre": "Cartulina Roja",
+    "categoria": "Papelería",
     "unidad": "pieza",
     "contenido": 1.0,
-    "precio": 10.0,
-    "stock": 70.0
+    "precio": 5.5,
+    "stock": 60.0
+  },
+  {
+    "sku": "SI-001",
+    "nombre": "Barra de Silicón Transparente 11mm (caja 20)",
+    "categoria": "Manualidades",
+    "unidad": "caja",
+    "contenido": 20.0,
+    "precio": 140.0,
+    "stock": 12.0
+  },
+  {
+    "sku": "SI-002",
+    "nombre": "Barra de Silicón Transparente 7mm (caja 30)",
+    "categoria": "Manualidades",
+    "unidad": "caja",
+    "contenido": 30.0,
+    "precio": 150.0,
+    "stock": 9.0
+  },
+  {
+    "sku": "CI-001",
+    "nombre": "Cinta Adhesiva Transparente 18mm (paquete 6)",
+    "categoria": "Oficina",
+    "unidad": "paquete",
+    "contenido": 6.0,
+    "precio": 52.0,
+    "stock": 14.0
+  },
+  {
+    "sku": "CI-002",
+    "nombre": "Cinta Masking Tape 24mm (paquete 6)",
+    "categoria": "Oficina",
+    "unidad": "paquete",
+    "contenido": 6.0,
+    "precio": 66.0,
+    "stock": 10.0
   }
 ]

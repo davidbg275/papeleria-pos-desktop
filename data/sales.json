@@ -325,5 +325,21 @@
     "total": 4.5,
     "efectivo": 5.0,
     "cambio": 0.5
+  },
+  {
+    "id": "edfa3989",
+    "fecha": "2025-10-29T20:02:37.108043422",
+    "items": [
+      {
+        "sku": "HO-001",
+        "nombre": "Hojas Blancas Carta (500 hojas)",
+        "cantidadBase": 0.002,
+        "precioUnitario": 0.22,
+        "subtotal": 4.4E-4
+      }
+    ],
+    "total": 4.4E-4,
+    "efectivo": 1.0,
+    "cambio": 0.99956
   }
 ]
