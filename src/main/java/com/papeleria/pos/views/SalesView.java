@@ -71,6 +71,61 @@ public class SalesView extends BorderPane {
         cProd.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getNombre()));
         TableColumn<SaleItem, Number> cCant = new TableColumn<>("Cant.");
         cCant.setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getCantidadBase()));
+        cCant.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Number v, boolean empty) {
+                super.updateItem(v, empty);
+                if (empty || v == null) {
+                    setText(null);
+                    return;
+                }
+                SaleItem it = getTableView().getItems().get(getIndex());
+                com.papeleria.pos.models.Product p = inventory.findBySku(it.getSku()).orElse(null);
+                if (p == null) {
+                    setText(String.format("%.3f", v.doubleValue()));
+                    return;
+                }
+
+                String u = (p.getUnidad() == null ? "" : p.getUnidad().trim().toLowerCase());
+                double contenido = Math.max(0.0, p.getContenido());
+                double qProd = it.getCantidadBase();
+
+                final double EPS = 1e-9;
+                String txt;
+                if ((u.equals("paquete") || u.equals("caja")) && contenido > 0) {
+                    double piezas = qProd * contenido; // piezas/hojas
+                    long entero = Math.round(piezas);
+                    if (Math.abs(piezas - entero) < EPS) {
+                        // heurística: si el nombre contiene "hoja" usar "hoja(s)"
+                        String name = p.getNombre() == null ? "" : p.getNombre().toLowerCase();
+                        String menor = name.contains("hoja") ? "hoja" : "pieza";
+                        txt = entero + " " + (entero == 1 ? menor : menor + "s");
+                    } else {
+                        txt = String.format("%.3f %s", piezas, "pzas");
+                    }
+                } else if (u.equals("rollo") && contenido > 0) {
+                    double metros = qProd * contenido;
+                    if (metros >= 1)
+                        txt = String.format("%.2f m", metros);
+                    else
+                        txt = String.format("%.0f cm", metros * 100.0);
+                } else if (u.equals("m") || u.equals("metro") || u.equals("metros")) {
+                    txt = String.format("%.2f m", qProd);
+                } else {
+                    // unidad suelta del producto (paquete/caja/rollo/pieza)
+                    long entero = Math.round(qProd);
+                    String label = switch (u) {
+                        case "paquete" -> "paquete";
+                        case "caja" -> "caja";
+                        case "rollo" -> "rollo";
+                        default -> "pieza";
+                    };
+                    txt = entero + " " + (entero == 1 ? label : label + "s");
+                }
+                setText(txt);
+            }
+        });
+
         TableColumn<SaleItem, Number> cPrecio = new TableColumn<>("Precio");
         cPrecio.setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getPrecioUnitario()));
         TableColumn<SaleItem, Number> cSub = new TableColumn<>("Subtotal");
@@ -142,15 +197,19 @@ public class SalesView extends BorderPane {
             Button add = new Button("+");
             add.getStyleClass().addAll("product-add", "primary");
             add.setOnAction(ev -> {
-                Choice choice = promptVenta(p); // regresa cantidad en UNIDAD DEL PRODUCTO + precio unitario efectivo
-                if (choice == null)
+                Choice c = promptVenta(p); // devuelve qtyInProductUnit (fracción) y unitPricePerProductUnit
+                if (c == null)
                     return;
-                if (!sales.validarStock(p.getSku(), choice.qtyInProductUnit)) {
+                if (!sales.validarStock(p.getSku(), c.qtyInProductUnit)) {
                     flash((VBox) getLeft(), AlertBanner.warn("Stock insuficiente"));
                     return;
                 }
-                addToCartWithPrice(p, choice.qtyInProductUnit, choice.unitPrice);
+                // usa SIEMPRE el precio del producto (por SU unidad)
+                SaleItem it = new SaleItem(p.getSku(), p.getNombre(), c.qtyInProductUnit, p.getPrecio());
+                cart.add(it);
+                recalcTotal();
             });
+            ;
 
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -195,28 +254,57 @@ public class SalesView extends BorderPane {
             flash((VBox) getLeft(), AlertBanner.warn("Carrito vacío"));
             return;
         }
-        double total = cart.stream().mapToDouble(SaleItem::getSubtotal).sum();
+
+        double raw = cart.stream().mapToDouble(SaleItem::getSubtotal).sum();
+        double totalCobrar = roundMex(raw); // 👈 redondeo mexicano
+
         double ef = parseDouble(
                 ((TextField) ((HBox) ((VBox) getRight()).getChildren().get(4)).getChildren().get(1)).getText(), 0.0);
-        if (ef < total) {
-            flash((VBox) getLeft(), AlertBanner.warn("Efectivo insuficiente"));
+
+        if (ef < totalCobrar) {
+            flash((VBox) getLeft(), AlertBanner.warn("Efectivo insuficiente (Total: " + money(totalCobrar) + ")"));
             return;
         }
-        Sale s = new Sale(UUID.randomUUID().toString().substring(0, 8));
+
+        double cambio = ef - totalCobrar;
+        double cambioRed = roundMex(cambio); // 👈 cambio redondeado a $0.50
+
+        // Guardar venta (total redondeado). Sale recalcula cambio internamente, pero la
+        // UI muestra el redondeado.
+        Sale s = new Sale(java.util.UUID.randomUUID().toString().substring(0, 8));
         for (SaleItem it : cart)
             s.agregarItem(it);
         s.setEfectivo(ef);
-        sales.cobrarYGuardar(s); // descuenta stock, guarda venta y publica eventos
+        s.setTotal(totalCobrar); // 👈 total a cobrar en ticket/registro
+
+        sales.cobrarYGuardar(s);
 
         cart.clear();
         recalcTotal();
         ((TextField) ((HBox) ((VBox) getRight()).getChildren().get(4)).getChildren().get(1)).clear();
-        flash((VBox) getLeft(), AlertBanner.success("Venta registrada. Ticket generado."));
+
+        flash((VBox) getLeft(), AlertBanner.success(
+                "Venta registrada. Total " + money(totalCobrar) + " | Cambio " + money(cambioRed) + " (redondeado)"));
     }
 
     private void recalcTotal() {
-        double total = cart.stream().mapToDouble(SaleItem::getSubtotal).sum();
-        totalLbl.setText(String.format("$%.2f", total));
+        double raw = cart.stream().mapToDouble(SaleItem::getSubtotal).sum();
+        double charge = roundMex(raw);
+        totalLbl.setText(String.format("$%,.2f", charge));
+    }
+
+    // redondeo a múltiplos de 0.50; si hay monto >0 y queda <0.50 => 0.50
+    private double roundMex(double value) {
+        if (value <= 0)
+            return 0.0;
+        double half = Math.round(value * 2.0) / 2.0; // múltiplo de 0.50
+        if (half < 0.50)
+            half = 0.50;
+        return half;
+    }
+
+    private String money(double v) {
+        return String.format("$%,.2f", v);
     }
 
     private double parseDouble(String s, double def) {
@@ -303,41 +391,30 @@ public class SalesView extends BorderPane {
             double unitPrice; // precio por la unidad EFECTIVA que se cobra en esta línea
 
             // Precio base declarado en el producto es por la unidad del producto
+            // dentro de d.setResultConverter(...)
             double pricePerProductUnit = p.getPrecio();
-
-            if (sel.equals("Paquete") && uProd.equals("paquete")
-                    || sel.equals("Caja") && uProd.equals("caja")
-                    || sel.equals("Rollo") && uProd.equals("rollo")
-                    || sel.equals("Unidad")
-                            && !(uProd.equals("paquete") || uProd.equals("caja") || uProd.equals("rollo"))
-                    || sel.equals("Metro") && (uProd.equals("m") || uProd.equals("metro") || uProd.equals("metros"))) {
-                // VENTA EN LA MISMA UNIDAD DEL PRODUCTO
-                qtyInProductUnit = q; // descuento directo del stock
-                unitPrice = pricePerProductUnit; // precio por esa unidad
-            } else if (sel.equals("Pieza") || sel.equals("Hoja")) {
-                // VENTA EN UNIDAD MÁS CHICA que el producto (pieza/hoja dentro de paquete o
-                // caja)
+            if (sel.equals("Hoja") || sel.equals("Pieza")) {
                 if (contenido <= 0)
                     return null;
-                qtyInProductUnit = q / contenido; // fracción de paquete/caja
-                unitPrice = pricePerProductUnit / contenido; // precio por pieza/hoja
+                qtyInProductUnit = q / contenido; // fracción del paquete/caja
+                unitPrice = pricePerProductUnit; // 👈 precio por paquete/caja (NO dividir)
             } else if (sel.equals("Metro") && uProd.equals("rollo")) {
-                // VENTA POR METRO (rollo de N metros)
                 if (contenido <= 0)
                     return null;
-                qtyInProductUnit = q / contenido; // q metros sobre rollos de 'contenido' metros
-                unitPrice = pricePerProductUnit / contenido; // precio por metro
+                qtyInProductUnit = q / contenido; // fracción del rollo
+                unitPrice = pricePerProductUnit; // 👈 precio por rollo completo
             } else if (sel.equals("Centímetro") && uProd.equals("rollo")) {
                 if (contenido <= 0)
                     return null;
-                qtyInProductUnit = (q / 100.0) / contenido; // cm → m → fracción de rollo
-                unitPrice = pricePerProductUnit / (contenido * 100.0); // precio por cm
+                qtyInProductUnit = (q / 100.0) / contenido;
+                unitPrice = pricePerProductUnit; // 👈 igual
             } else {
-                // Cualquier otro caso no contemplado
-                return null;
+                // misma unidad del producto (Paquete/Caja/Rollo/Metro/Unidad)
+                qtyInProductUnit = q;
+                unitPrice = pricePerProductUnit;
             }
-
             return new Choice(qtyInProductUnit, unitPrice);
+
         });
 
         return d.showAndWait().orElse(null);
