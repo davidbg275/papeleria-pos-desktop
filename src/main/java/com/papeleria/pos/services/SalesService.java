@@ -86,14 +86,16 @@ public class SalesService {
         }
     }
 
-    private void generarTicketTxt(Sale s) {
+    private String generarTicketTxt(Sale s) {
+        StringBuilder sb = new StringBuilder();
         try {
             java.nio.file.Path dir = storage.getTicketsDir();
             java.time.format.DateTimeFormatter f = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-            StringBuilder sb = new StringBuilder();
+
             sb.append("Ticket: ").append(s.getId()).append("\n")
                     .append("Fecha: ").append(s.getFecha() == null ? "" : s.getFecha().format(f)).append("\n")
                     .append("----------------------------------------\n");
+
             for (SaleItem it : s.getItems()) {
                 sb.append(String.format("%-22s %6.3f x %6.2f = %7.2f\n",
                         it.getNombre(), it.getCantidadBase(), it.getPrecioUnitario(), it.getSubtotal()));
@@ -101,17 +103,28 @@ public class SalesService {
             sb.append("----------------------------------------\n");
 
             double total = s.getTotal();
-            double cambioRed = roundMex(Math.max(0, s.getEfectivo() - total)); // 👈 redondeo a $0.50
+            double cambioRed = roundMex(Math.max(0, s.getEfectivo() - total));
 
             sb.append(String.format("TOTAL:    %,.2f\n", total))
                     .append(String.format("EFECTIVO: %,.2f\n", s.getEfectivo()))
                     .append(String.format("CAMBIO:   %,.2f\n", cambioRed));
 
+            // Guarda el archivo
             java.nio.file.Path out = dir.resolve("ticket-" + s.getId() + ".txt");
-            java.nio.file.Files.writeString(out, sb.toString(), java.nio.charset.StandardCharsets.UTF_8,
-                    java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.TRUNCATE_EXISTING);
-        } catch (java.io.IOException ignored) {
+            java.nio.file.Files.writeString(out, sb.toString(),
+                    java.nio.charset.StandardCharsets.UTF_8,
+                    java.nio.file.StandardOpenOption.CREATE,
+                    java.nio.file.StandardOpenOption.TRUNCATE_EXISTING);
+
+        } catch (Exception ignored) {
         }
+
+        return sb.toString(); // 🔹 devolvemos el texto
+    }
+
+    public String cobrarYGuardarReturnTicket(Sale sale) {
+        cobrarYGuardar(sale);
+        return generarTicketTxt(sale);
     }
 
 }

@@ -1,0 +1,9 @@
+Ticket: 1f345e59
+Fecha: 2025-10-29 21:43
+----------------------------------------
+Hojas Blancas Carta (500 hojas)  0,002 x 110,00 =    0,22
+Hojas Color Azul Carta (100 hojas)  1,000 x  32,00 =   32,00
+----------------------------------------
+TOTAL:    32,00
+EFECTIVO: 110,00
+CAMBIO:   78,00

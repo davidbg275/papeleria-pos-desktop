@@ -6,7 +6,7 @@
     "unidad": "paquete",
     "contenido": 500.0,
     "precio": 110.0,
-    "stock": 28.963980000000017
+    "stock": 28.95798000000002
   },
   {
     "sku": "HO-002",
@@ -15,7 +15,7 @@
     "unidad": "paquete",
     "contenido": 100.0,
     "precio": 32.0,
-    "stock": 40.0
+    "stock": 37.0
   },
   {
     "sku": "HO-003",
@@ -24,7 +24,7 @@
     "unidad": "paquete",
     "contenido": 100.0,
     "precio": 32.0,
-    "stock": 25.0
+    "stock": 24.0
   },
   {
     "sku": "HO-004",
@@ -87,7 +87,7 @@
     "unidad": "rollo",
     "contenido": 10.0,
     "precio": 26.0,
-    "stock": 25.0
+    "stock": 23.849999999999998
   },
   {
     "sku": "LI-002",

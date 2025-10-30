@@ -310,14 +310,25 @@ public class SalesView extends BorderPane {
         s.setEfectivo(ef);
         s.setTotal(totalCobrar); // 👈 total a cobrar en ticket/registro
 
-        sales.cobrarYGuardar(s);
-
+        String ticket = sales.cobrarYGuardarReturnTicket(s);
         cart.clear();
         recalcTotal();
-        ((TextField) ((HBox) ((VBox) getRight()).getChildren().get(4)).getChildren().get(1)).clear();
 
-        flash((VBox) getLeft(), AlertBanner.success(
-                "Venta registrada. Total " + money(totalCobrar) + " | Cambio " + money(cambioRed) + " (redondeado)"));
+        // Mostrar ticket en diálogo
+        TextArea ta = new TextArea(ticket);
+        ta.setEditable(false);
+        ta.setWrapText(true);
+        ta.setStyle("-fx-font-family: 'JetBrains Mono', monospace; -fx-font-size: 12px;");
+        ta.setPrefSize(420, 380);
+
+        Alert a = new Alert(Alert.AlertType.INFORMATION);
+        a.setTitle("Ticket generado");
+        a.setHeaderText("Venta registrada con éxito");
+        a.getDialogPane().setContent(ta);
+        a.showAndWait();
+
+        flash((VBox) getLeft(), AlertBanner.success("Ticket mostrado y guardado"));
+
     }
 
     private void recalcTotal() {
