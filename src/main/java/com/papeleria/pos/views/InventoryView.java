@@ -20,6 +20,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
+import javafx.animation.PauseTransition;
+import javafx.util.Duration;
+
 public class InventoryView extends VBox {
     private final SessionService session;
     private final InventoryService service;
@@ -91,21 +94,35 @@ public class InventoryView extends VBox {
         });
         btnClearAll.setOnAction(ev -> {
             if (!session.isAdmin()) {
-                getChildren().add(0, AlertBanner.danger("Solo ADMIN puede eliminar TODO"));
+                if (!session.isAdmin()) {
+                    flash(AlertBanner.danger("Solo ADMIN puede eliminar TODO"));
+                    return;
+                }
+
                 return;
             }
             TextInputDialog d = new TextInputDialog();
             d.setTitle("Confirmación");
-            d.setHeaderText("Confirmar eliminación total");
-            d.setContentText("Escribe la contraseña de admin para confirmar:");
+            d.setHeaderText("Eliminar TODO el inventario");
+            d.setContentText("Escribe: ELIMINAR");
             Optional<String> ans = d.showAndWait();
-            if (ans.isPresent() && ans.get().equals("admin")) {
+            if (ans.isPresent() && "ELIMINAR".equalsIgnoreCase(ans.get().trim())) {
                 service.clearAll();
-                getChildren().add(0, AlertBanner.success("Inventario eliminado"));
+                refresh();
+                if (!session.isAdmin()) {
+                    flash(AlertBanner.danger("Solo ADMIN puede eliminar TODO"));
+                    return;
+                }
+
             } else {
-                getChildren().add(0, AlertBanner.warn("Operación cancelada"));
+                if (!session.isAdmin()) {
+                    flash(AlertBanner.danger("Solo ADMIN puede eliminar TODO"));
+                    return;
+                }
+
             }
         });
+
         btnImport.setOnAction(ev -> {
             if (!session.isAdmin()) {
                 getChildren().add(0, AlertBanner.warn("Solo ADMIN puede importar"));
@@ -259,4 +276,14 @@ public class InventoryView extends VBox {
         List<Product> src = service.search(q);
         backing.setAll(src);
     }
+
+    // Muestra una alerta en el tope y la retira sola
+    private void flash(AlertBanner banner) {
+        getChildren().removeIf(n -> n instanceof AlertBanner);
+        getChildren().add(0, banner);
+        PauseTransition t = new PauseTransition(Duration.seconds(2.5));
+        t.setOnFinished(e -> getChildren().remove(banner));
+        t.play();
+    }
+
 }
