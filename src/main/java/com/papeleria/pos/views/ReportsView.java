@@ -252,9 +252,18 @@ public class ReportsView extends VBox {
 
         // Suscripciones para refrescar KPIs/gráficas al cambiar ventas/inventario
         bus.subscribe(EventBus.Topic.SALES_CHANGED,
-                e -> javafx.application.Platform.runLater(() -> refresh(inventory, storage, kpis, ventasChart, top)));
+                e -> javafx.application.Platform.runLater(() -> {
+                    refresh(inventory, storage, kpis, ventasChart, top);
+                    refreshHistory(tabla, sales, ticketView); // ← también recarga la tabla y limpia vista
+                }));
+
         bus.subscribe(EventBus.Topic.INVENTORY_CHANGED,
-                e -> javafx.application.Platform.runLater(() -> refresh(inventory, storage, kpis, ventasChart, top)));
+                e -> javafx.application.Platform.runLater(() -> {
+                    refresh(inventory, storage, kpis, ventasChart, top);
+                    // opcional: no es estrictamente necesario refrescar historial en cambios de
+                    // inventario
+                }));
+
     }
 
     private HBox kpi(String title, String value) {
@@ -331,4 +340,16 @@ public class ReportsView extends VBox {
             s2.getData().add(new XYChart.Data<>("Sin datos", 0));
         top.getData().add(s2);
     }
+
+    // Recarga la tabla de ventas (historial) y limpia la vista de ticket
+    private void refreshHistory(javafx.scene.control.TableView<Sale> tabla,
+            SalesService sales,
+            javafx.scene.control.TextArea ticketView) {
+        java.util.List<Sale> vs = new java.util.ArrayList<>(sales.listSales());
+        vs.sort(java.util.Comparator.comparing(Sale::getFecha,
+                java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())).reversed());
+        tabla.getItems().setAll(vs);
+        ticketView.clear();
+    }
+
 }

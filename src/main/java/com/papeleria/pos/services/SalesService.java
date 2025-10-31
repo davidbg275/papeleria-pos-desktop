@@ -77,6 +77,7 @@ public class SalesService {
         java.util.List<Sale> all = new java.util.ArrayList<>(storage.loadSales());
         all.add(sale);
         storage.saveSales(all);
+        bus.publish(EventBus.Topic.SALES_CHANGED, sale);
 
         // 6) Ticket (con cambio redondeado a $0.50)
         generarTicketTxt(sale);
