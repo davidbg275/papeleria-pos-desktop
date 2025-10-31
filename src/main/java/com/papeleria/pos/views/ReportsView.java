@@ -4,29 +4,32 @@ import com.papeleria.pos.models.Product;
 import com.papeleria.pos.models.Sale;
 import com.papeleria.pos.services.EventBus;
 import com.papeleria.pos.services.InventoryService;
-import com.papeleria.pos.services.StorageService;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.chart.CategoryAxis;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.BarChart;
-import javafx.scene.chart.XYChart;
-import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.Button;
-import javafx.scene.control.TextInputDialog;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import com.papeleria.pos.services.SalesService;
 import com.papeleria.pos.services.SessionService;
+import com.papeleria.pos.services.StorageService;
 
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.geometry.Insets;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.util.Pair;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 public class ReportsView extends VBox {
 
-    public ReportsView(SessionService session, SalesService sales, InventoryService inventory, StorageService storage,
+    public ReportsView(SessionService session,
+            SalesService sales,
+            InventoryService inventory,
+            StorageService storage,
             EventBus bus) {
 
         setSpacing(12);
@@ -37,76 +40,176 @@ public class ReportsView extends VBox {
         Label sub = new Label("Análisis de ventas y rendimiento de tu papelería");
         sub.getStyleClass().add("subtle");
 
-        // Barra de rango + export (maquillaje)
+        // --- Barra superior
         HBox bar = new HBox(8);
         ChoiceBox<String> rango = new ChoiceBox<>();
         rango.getItems().addAll("Últimos 7 días", "Últimos 30 días", "Este mes", "Año en curso");
         rango.getSelectionModel().selectFirst();
+
         Region sp = new Region();
         HBox.setHgrow(sp, Priority.ALWAYS);
-        Label export = new Label("⬇ Exportar");
-        export.getStyleClass().add("button");
-        export.getStyleClass().add("ghost");
-        Button cancelar = new Button("Cancelar venta");
-        cancelar.getStyleClass().add("button");
-        cancelar.getStyleClass().add("danger");
-        cancelar.setDisable(!session.isAdmin());
-        cancelar.setOnAction(e -> {
-            TextInputDialog dlg = new TextInputDialog();
-            dlg.setTitle("Cancelar venta");
-            dlg.setHeaderText("Ingrese el ID de la venta a cancelar");
-            dlg.setContentText("ID de ticket/venta:");
-            dlg.showAndWait().ifPresent(id -> {
-                String v = id == null ? "" : id.trim();
-                if (v.isEmpty())
-                    return;
-                // Confirmación
-                Alert c = new Alert(Alert.AlertType.CONFIRMATION);
-                c.setTitle("Confirmar cancelación");
-                c.setHeaderText("¿Cancelar la venta " + v + "?");
-                c.setContentText("Esta acción repone inventario y elimina el ticket.");
-                java.util.Optional<ButtonType> rr = c.showAndWait();
-                if (rr.isEmpty() || rr.get() != ButtonType.OK)
-                    return;
 
-                boolean ok = sales.cancelarVenta(v, session.isAdmin());
-                Alert a = new Alert(ok ? Alert.AlertType.INFORMATION : Alert.AlertType.WARNING);
-                a.setTitle("Cancelar venta");
-                a.setHeaderText(ok ? "Venta cancelada" : "No autorizado o venta inexistente");
-                a.setContentText(ok ? "La venta fue cancelada y el inventario repuesto."
-                        : "Verifique el ID y el rol del usuario.");
-                a.showAndWait();
-            });
+        Label export = new Label("⬇ Exportar");
+        export.getStyleClass().addAll("button", "ghost");
+
+        Button ver = new Button("Ver ticket");
+        ver.getStyleClass().addAll("button", "ghost");
+
+        Button cancelar = new Button("Cancelar venta");
+        cancelar.getStyleClass().addAll("button", "danger");
+        // No se deshabilita para vendedores: pediremos credenciales de ADMIN
+        bar.getChildren().addAll(rango, sp, export, ver, cancelar);
+
+        // ===== Historial de ventas =====
+        TableView<Sale> tabla = new TableView<>();
+        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+
+        TableColumn<Sale, String> cFecha = new TableColumn<>("Fecha");
+        cFecha.setMinWidth(160);
+        cFecha.setCellValueFactory(d -> new SimpleStringProperty(
+                d.getValue().getFecha() == null ? ""
+                        : d.getValue().getFecha()
+                                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))));
+
+        TableColumn<Sale, String> cId = new TableColumn<>("ID");
+        cId.setMinWidth(100);
+        cId.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getId()));
+
+        TableColumn<Sale, Number> cTotal = new TableColumn<>("Total");
+        cTotal.setMinWidth(100);
+        cTotal.setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getTotal()));
+
+        tabla.getColumns().setAll(cFecha, cId, cTotal);
+
+        // Cargar y ordenar por fecha desc
+        List<Sale> ventas = new ArrayList<>(sales.listSales());
+        ventas.sort(Comparator.comparing(Sale::getFecha,
+                Comparator.nullsLast(Comparator.naturalOrder())).reversed());
+        tabla.getItems().setAll(ventas);
+
+        // Panel de ticket
+        TextArea ticketView = new TextArea();
+        ticketView.setEditable(false);
+        ticketView.setWrapText(true);
+        ticketView.setPrefRowCount(12);
+        ticketView.setStyle("-fx-font-family: 'JetBrains Mono', monospace; -fx-font-size: 12px;");
+
+        // Al seleccionar una venta, mostrar ticket
+        tabla.getSelectionModel().selectedItemProperty().addListener((o, a, s) -> {
+            if (s == null) {
+                ticketView.clear();
+                return;
+            }
+            ticketView.setText(sales.readTicket(s.getId()));
         });
 
-        bar.getChildren().addAll(rango, sp, export, cancelar);
+        // Botón Ver ticket
+        ver.setOnAction(e -> {
+            Sale s = tabla.getSelectionModel().getSelectedItem();
+            if (s == null)
+                return;
+            Alert a = new Alert(Alert.AlertType.INFORMATION);
+            a.setTitle("Ticket " + s.getId());
+            a.setHeaderText("Vista previa de ticket");
+            TextArea ta = new TextArea(ticketView.getText().isEmpty()
+                    ? sales.readTicket(s.getId())
+                    : ticketView.getText());
+            ta.setEditable(false);
+            ta.setWrapText(true);
+            ta.setStyle("-fx-font-family: 'JetBrains Mono', monospace; -fx-font-size: 12px;");
+            ta.setPrefSize(420, 380);
+            a.getDialogPane().setContent(ta);
+            a.showAndWait();
+        });
 
-        // KPIs
+        // Botón Cancelar venta (pide credenciales de ADMIN)
+        cancelar.setOnAction(e -> {
+            Sale s = tabla.getSelectionModel().getSelectedItem();
+            if (s == null)
+                return;
+
+            // Pide usuario/contraseña de ADMIN
+            Dialog<Pair<String, String>> d = new Dialog<>();
+            d.setTitle("Autorización de administrador");
+            d.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            GridPane g = new GridPane();
+            g.setHgap(8);
+            g.setVgap(8);
+            g.setPadding(new Insets(10));
+            TextField user = new TextField();
+            user.setPromptText("Usuario ADMIN");
+            PasswordField pass = new PasswordField();
+            pass.setPromptText("Contraseña ADMIN");
+            g.addRow(0, new Label("Usuario"), user);
+            g.addRow(1, new Label("Contraseña"), pass);
+            d.getDialogPane().setContent(g);
+
+            d.setResultConverter(bt -> bt == ButtonType.OK ? new Pair<>(user.getText().trim(), pass.getText()) : null);
+            Optional<Pair<String, String>> cred = d.showAndWait();
+            if (cred.isEmpty())
+                return;
+
+            // Confirmar la cancelación
+            Alert c = new Alert(Alert.AlertType.CONFIRMATION);
+            c.setTitle("Confirmar cancelación");
+            c.setHeaderText("¿Cancelar la venta " + s.getId() + "?");
+            c.setContentText("Se repondrá inventario y se eliminará el ticket.");
+            Optional<ButtonType> rr = c.showAndWait();
+            if (rr.isEmpty() || rr.get() != ButtonType.OK)
+                return;
+
+            boolean ok = sales.cancelarVenta(s.getId(), cred.get().getKey(), cred.get().getValue());
+            Alert res = new Alert(ok ? Alert.AlertType.INFORMATION : Alert.AlertType.WARNING);
+            res.setTitle("Cancelar venta");
+            res.setHeaderText(ok ? "Venta cancelada" : "Autorización inválida o venta no encontrada");
+            res.setContentText(ok ? "Inventario repuesto. Ticket eliminado."
+                    : "Verifique credenciales o seleccione otra venta.");
+            res.showAndWait();
+
+            if (ok) {
+                // refrescar tabla
+                List<Sale> vs = new ArrayList<>(sales.listSales());
+                vs.sort(Comparator.comparing(Sale::getFecha,
+                        Comparator.nullsLast(Comparator.naturalOrder())).reversed());
+                tabla.getItems().setAll(vs);
+                ticketView.clear();
+            }
+        });
+
+        // Contenedor del historial
+        VBox historyBox = new VBox(8, new Label("Historial de Ventas"), tabla,
+                new Label("Vista de ticket"), ticketView);
+        historyBox.getStyleClass().add("panel");
+        historyBox.setPadding(new Insets(12));
+
+        // ===== KPIs =====
         HBox kpis = new HBox(12,
                 kpi("Ventas Hoy", "$" + String.format("%.2f", totalVentas(storage))),
                 kpi("Transacciones", String.valueOf(totalTransacciones(storage))),
                 kpi("Ticket Promedio", "$" + String.format("%.2f", ticketPromedio(storage))),
                 kpi("Ganancia Neta", "$" + String.format("%.2f", gananciaSimple(storage))));
 
-        // Gráfica Ventas por período (dummy/simple con 7 barras)
+        // ===== Gráficas =====
+        // Ventas por período (simple)
         CategoryAxis x = new CategoryAxis();
         NumberAxis y = new NumberAxis();
-        BarChart<String, Number> ventas = new BarChart<>(x, y);
-        ventas.setLegendVisible(false);
-        ventas.setCategoryGap(12);
-        ventas.setTitle(null);
-        ventas.setPrefHeight(240);
-        XYChart.Series<String, Number> s = new XYChart.Series<>();
+        BarChart<String, Number> ventasChart = new BarChart<>(x, y);
+        ventasChart.setLegendVisible(false);
+        ventasChart.setCategoryGap(12);
+        ventasChart.setTitle(null);
+        ventasChart.setPrefHeight(240);
+        XYChart.Series<String, Number> s1 = new XYChart.Series<>();
         double base = Math.max(1.0, totalVentas(storage));
         for (int i = 1; i <= 7; i++) {
-            s.getData().add(new XYChart.Data<>("D" + i, (base / 7.0) * (0.6 + (i % 3) * 0.2)));
+            s1.getData().add(new XYChart.Data<>("D" + i, (base / 7.0) * (0.6 + (i % 3) * 0.2)));
         }
-        ventas.getData().add(s);
-        StackPane ventasCard = new StackPane(ventas);
+        ventasChart.getData().add(s1);
+        StackPane ventasCard = new StackPane(ventasChart);
         ventasCard.getStyleClass().add("card");
         ventasCard.setPadding(new Insets(12));
 
-        // Gráfica Productos más vendidos (dummy usando inventario)
+        // Top productos por stock (simple)
         CategoryAxis px = new CategoryAxis();
         NumberAxis py = new NumberAxis();
         BarChart<String, Number> top = new BarChart<>(px, py);
@@ -117,22 +220,20 @@ public class ReportsView extends VBox {
         List<Product> prods = inventory.list();
         int count = 0;
         for (Product p : prods) {
-            s2.getData()
-                    .add(new XYChart.Data<>(
-                            p.getNombre().length() > 10 ? p.getNombre().substring(0, 10) + "…" : p.getNombre(),
-                            Math.max(0, Math.min(100, p.getStock()))));
+            s2.getData().add(new XYChart.Data<>(
+                    p.getNombre().length() > 10 ? p.getNombre().substring(0, 10) + "…" : p.getNombre(),
+                    Math.max(0, Math.min(100, p.getStock()))));
             if (++count == 5)
                 break;
         }
-        if (count == 0) {
+        if (count == 0)
             s2.getData().add(new XYChart.Data<>("Sin datos", 0));
-        }
         top.getData().add(s2);
         StackPane topCard = new StackPane(top);
         topCard.getStyleClass().add("card");
         topCard.setPadding(new Insets(12));
 
-        // Dos tarjetas inferiores tipo resumen
+        // Layout de gráficas
         VBox leftBottom = new VBox(12, new Label("Top 5 Productos"), topCard);
         leftBottom.getStyleClass().add("panel");
         VBox rightBottom = new VBox(12, new Label("Ventas por Período"), ventasCard);
@@ -146,11 +247,14 @@ public class ReportsView extends VBox {
         GridPane.setHgrow(leftBottom, Priority.ALWAYS);
         GridPane.setHgrow(rightBottom, Priority.ALWAYS);
 
-        getChildren().addAll(title, sub, bar, kpis, grid);
+        // Ensamblar página
+        getChildren().addAll(title, sub, bar, kpis, historyBox, grid);
+
+        // Suscripciones para refrescar KPIs/gráficas al cambiar ventas/inventario
         bus.subscribe(EventBus.Topic.SALES_CHANGED,
-                e -> javafx.application.Platform.runLater(() -> refresh(inventory, storage, kpis, ventas, top)));
+                e -> javafx.application.Platform.runLater(() -> refresh(inventory, storage, kpis, ventasChart, top)));
         bus.subscribe(EventBus.Topic.INVENTORY_CHANGED,
-                e -> javafx.application.Platform.runLater(() -> refresh(inventory, storage, kpis, ventas, top)));
+                e -> javafx.application.Platform.runLater(() -> refresh(inventory, storage, kpis, ventasChart, top)));
     }
 
     private HBox kpi(String title, String value) {
@@ -184,14 +288,17 @@ public class ReportsView extends VBox {
     }
 
     private double gananciaSimple(StorageService storage) {
-        // Estimación rápida 40% margen sobre total (coincide con la tarjeta de ejemplo)
+        // Estimación rápida 40% margen
         return totalVentas(storage) * 0.40;
     }
 
-    // --- NUEVO: método refresh para recalcular KPIs y series ---
-    private void refresh(InventoryService inventory, StorageService storage, HBox kpis, BarChart<String, Number> ventas,
+    // Recalcular KPIs y series
+    private void refresh(InventoryService inventory,
+            StorageService storage,
+            HBox kpis,
+            BarChart<String, Number> ventas,
             BarChart<String, Number> top) {
-        // KPIs
+
         ((Label) ((VBox) ((HBox) kpis.getChildren().get(0)).getChildren().get(0)).getChildren().get(1))
                 .setText("$" + String.format("%.2f", totalVentas(storage)));
         ((Label) ((VBox) ((HBox) kpis.getChildren().get(1)).getChildren().get(0)).getChildren().get(1))
@@ -201,24 +308,22 @@ public class ReportsView extends VBox {
         ((Label) ((VBox) ((HBox) kpis.getChildren().get(3)).getChildren().get(0)).getChildren().get(1))
                 .setText("$" + String.format("%.2f", gananciaSimple(storage)));
 
-        // Ventas últimos 7 (dummy proporcional)
         ventas.getData().clear();
         XYChart.Series<String, Number> s = new XYChart.Series<>();
         double base = Math.max(1.0, totalVentas(storage));
-        for (int i = 1; i <= 7; i++)
+        for (int i = 1; i <= 7; i++) {
             s.getData().add(new XYChart.Data<>("D" + i, (base / 7.0) * (0.6 + (i % 3) * 0.2)));
+        }
         ventas.getData().add(s);
 
-        // Top productos por stock
         top.getData().clear();
         XYChart.Series<String, Number> s2 = new XYChart.Series<>();
         List<Product> prods = inventory.list();
         int count = 0;
         for (Product p : prods) {
-            s2.getData()
-                    .add(new XYChart.Data<>(
-                            p.getNombre().length() > 10 ? p.getNombre().substring(0, 10) + "…" : p.getNombre(),
-                            Math.max(0, Math.min(100, p.getStock()))));
+            s2.getData().add(new XYChart.Data<>(
+                    p.getNombre().length() > 10 ? p.getNombre().substring(0, 10) + "…" : p.getNombre(),
+                    Math.max(0, Math.min(100, p.getStock()))));
             if (++count == 5)
                 break;
         }

@@ -124,33 +124,31 @@ public class SalesService {
         return sb.toString(); // 🔹 devolvemos el texto
     }
 
-    public String cobrarYGuardarReturnTicket(Sale sale) {
-        cobrarYGuardar(sale);
-        return generarTicketTxt(sale);
-    }
-
-    // Cancela una venta y repone inventario. Requiere admin.
-    public boolean cancelarVenta(String saleId, boolean isAdmin) {
-        if (!isAdmin)
+    // Cancela una venta y repone inventario. Requiere credenciales de ADMIN.
+    public boolean cancelarVenta(String saleId, String adminUser, String adminPass) {
+        // Validar credenciales y rol ADMIN usando los servicios existentes
+        com.papeleria.pos.services.UserService us = new com.papeleria.pos.services.UserService(storage);
+        if (!us.validate(adminUser, adminPass) || us.roleOf(adminUser) != com.papeleria.pos.models.Role.ADMIN) {
             return false;
+        }
 
-        java.util.List<Sale> ventas = new java.util.ArrayList<>(storage.loadSales());
-        java.util.Optional<Sale> venta = ventas.stream()
+        java.util.List<com.papeleria.pos.models.Sale> ventas = new java.util.ArrayList<>(storage.loadSales());
+        java.util.Optional<com.papeleria.pos.models.Sale> venta = ventas.stream()
                 .filter(s -> s.getId() != null && s.getId().equals(saleId))
                 .findFirst();
         if (venta.isEmpty())
             return false;
 
-        // Reponer inventario por cada item
-        for (SaleItem it : venta.get().getItems()) {
+        // Reponer inventario
+        for (com.papeleria.pos.models.SaleItem it : venta.get().getItems()) {
             inventory.adjustStock(it.getSku(), it.getCantidadBase());
         }
 
-        // Eliminar venta del registro
+        // Eliminar venta y guardar
         ventas.remove(venta.get());
         storage.saveSales(ventas);
 
-        // Borrar ticket (si existe)
+        // Borrar ticket si existe
         try {
             java.nio.file.Path t = storage.getTicketsDir().resolve("ticket-" + saleId + ".txt");
             java.nio.file.Files.deleteIfExists(t);
@@ -163,6 +161,31 @@ public class SalesService {
             bus.publish(EventBus.Topic.INVENTORY_CHANGED, "CANCEL");
         }
         return true;
+    }
+
+    public String cobrarYGuardarReturnTicket(Sale sale) {
+
+        cobrarYGuardar(sale);
+        return generarTicketTxt(sale);
+    }
+
+    // === Utilidades para historial en UI ===
+
+    // Lista de ventas actuales (copia mutable para UI)
+    public java.util.List<com.papeleria.pos.models.Sale> listSales() {
+        return new java.util.ArrayList<>(storage.loadSales());
+    }
+
+    // Lee el ticket .txt de una venta para previsualizar en UI
+    public String readTicket(String saleId) {
+        try {
+            java.nio.file.Path p = storage.getTicketsDir().resolve("ticket-" + saleId + ".txt");
+            if (java.nio.file.Files.exists(p)) {
+                return java.nio.file.Files.readString(p, java.nio.charset.StandardCharsets.UTF_8);
+            }
+        } catch (Exception ignored) {
+        }
+        return "(Sin ticket generado o no disponible)";
     }
 
 }
