@@ -61,7 +61,7 @@ public class MainView extends BorderPane {
         inventoryView = new InventoryView(session, inventoryService, bus);
         salesView = new SalesView(session, salesService, inventoryService, bus);
         productionView = new ProductionView(session, productionService, inventoryService, bus);
-        reportsView = new ReportsView(inventoryService, storage, bus); // ← firma nueva con bus
+        reportsView = new ReportsView(session, salesService, inventoryService, storage, bus); // ← firma nueva con bus
         usersView = new UsersView(new UserService(storage));
 
         // === Contenido inicial (ventas) ===

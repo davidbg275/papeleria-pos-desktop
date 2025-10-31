@@ -21,6 +21,7 @@ import javafx.scene.layout.*;
 import javafx.util.Duration;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public class SalesView extends BorderPane {
@@ -192,6 +193,8 @@ public class SalesView extends BorderPane {
         cobrar.setOnAction(e -> cobrarAccion());
         limpiar.setOnAction(e -> {
             cart.clear();
+            efectivo.clear();
+
             recalcTotal();
             flash((VBox) getLeft(), AlertBanner.success("Carrito limpio"));
         });
@@ -301,6 +304,15 @@ public class SalesView extends BorderPane {
 
         double cambio = ef - totalCobrar;
         double cambioRed = roundMex(cambio); // 👈 cambio redondeado a $0.50
+        // Confirmación de cobro
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Confirmar Cobro");
+        confirm.setHeaderText("¿Confirmar cobro de " + money(totalCobrar) +
+                " con efectivo de " + money(ef) + "?");
+        confirm.setContentText("Cambio: " + money(cambioRed));
+        Optional<ButtonType> r = confirm.showAndWait();
+        if (r.isEmpty() || r.get() != ButtonType.OK)
+            return;
 
         // Guardar venta (total redondeado). Sale recalcula cambio internamente, pero la
         // UI muestra el redondeado.
@@ -312,6 +324,8 @@ public class SalesView extends BorderPane {
 
         String ticket = sales.cobrarYGuardarReturnTicket(s);
         cart.clear();
+        efectivo.clear();
+
         recalcTotal();
 
         // Mostrar ticket en diálogo

@@ -1,5 +1,7 @@
 package com.papeleria.pos.services;
 
+import com.papeleria.pos.models.Role;
+
 import com.papeleria.pos.models.Product;
 import com.papeleria.pos.models.Sale;
 import com.papeleria.pos.models.SaleItem;
@@ -125,6 +127,42 @@ public class SalesService {
     public String cobrarYGuardarReturnTicket(Sale sale) {
         cobrarYGuardar(sale);
         return generarTicketTxt(sale);
+    }
+
+    // Cancela una venta y repone inventario. Requiere admin.
+    public boolean cancelarVenta(String saleId, boolean isAdmin) {
+        if (!isAdmin)
+            return false;
+
+        java.util.List<Sale> ventas = new java.util.ArrayList<>(storage.loadSales());
+        java.util.Optional<Sale> venta = ventas.stream()
+                .filter(s -> s.getId() != null && s.getId().equals(saleId))
+                .findFirst();
+        if (venta.isEmpty())
+            return false;
+
+        // Reponer inventario por cada item
+        for (SaleItem it : venta.get().getItems()) {
+            inventory.adjustStock(it.getSku(), it.getCantidadBase());
+        }
+
+        // Eliminar venta del registro
+        ventas.remove(venta.get());
+        storage.saveSales(ventas);
+
+        // Borrar ticket (si existe)
+        try {
+            java.nio.file.Path t = storage.getTicketsDir().resolve("ticket-" + saleId + ".txt");
+            java.nio.file.Files.deleteIfExists(t);
+        } catch (Exception ignored) {
+        }
+
+        // Notificar
+        if (bus != null) {
+            bus.publish(EventBus.Topic.SALES_CHANGED, "CANCEL");
+            bus.publish(EventBus.Topic.INVENTORY_CHANGED, "CANCEL");
+        }
+        return true;
     }
 
 }

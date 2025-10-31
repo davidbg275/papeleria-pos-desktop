@@ -676,5 +676,69 @@
     "total": 30.0,
     "efectivo": 40.0,
     "cambio": 10.0
+  },
+  {
+    "id": "f799838b",
+    "fecha": "2025-10-30T18:20:48.013671334",
+    "items": [
+      {
+        "sku": "HO-001",
+        "nombre": "Hojas Blancas Carta (500 hojas)",
+        "cantidadBase": 1.0,
+        "precioUnitario": 110.0,
+        "subtotal": 110.0
+      }
+    ],
+    "total": 110.0,
+    "efectivo": 120.0,
+    "cambio": 10.0
+  },
+  {
+    "id": "5541a05a",
+    "fecha": "2025-10-30T18:30:21.366435855",
+    "items": [
+      {
+        "sku": "HO-002",
+        "nombre": "Hojas Color Azul Carta (100 hojas)",
+        "cantidadBase": 1.0,
+        "precioUnitario": 32.0,
+        "subtotal": 32.0
+      }
+    ],
+    "total": 32.0,
+    "efectivo": 40.0,
+    "cambio": 8.0
+  },
+  {
+    "id": "aeab3442",
+    "fecha": "2025-10-30T18:30:50.656773018",
+    "items": [
+      {
+        "sku": "HO-002",
+        "nombre": "Hojas Color Azul Carta (100 hojas)",
+        "cantidadBase": 1.0,
+        "precioUnitario": 32.0,
+        "subtotal": 32.0
+      }
+    ],
+    "total": 32.0,
+    "efectivo": 40.0,
+    "cambio": 8.0
+  },
+  {
+    "id": "4197d370",
+    "fecha": "2025-10-30T18:31:10.178233732",
+    "items": [
+      {
+        "sku": "HO-002",
+        "nombre": "Hojas Color Azul Carta (100 hojas)",
+        "cantidadBase": 1.0,
+        "precioUnitario": 32.0,
+        "subtotal": 32.0
+      }
+    ],
+    "total": 32.0,
+    "efectivo": 50.0,
+    "cambio": 18.0
   }
 ]

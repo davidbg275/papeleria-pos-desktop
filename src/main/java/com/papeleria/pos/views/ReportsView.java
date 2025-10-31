@@ -13,13 +13,22 @@ import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.Button;
+import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import com.papeleria.pos.services.SalesService;
+import com.papeleria.pos.services.SessionService;
+
 import javafx.scene.layout.*;
 
 import java.util.List;
 
 public class ReportsView extends VBox {
 
-    public ReportsView(InventoryService inventory, StorageService storage, EventBus bus) {
+    public ReportsView(SessionService session, SalesService sales, InventoryService inventory, StorageService storage,
+            EventBus bus) {
+
         setSpacing(12);
         setPadding(new Insets(12));
 
@@ -38,7 +47,39 @@ public class ReportsView extends VBox {
         Label export = new Label("⬇ Exportar");
         export.getStyleClass().add("button");
         export.getStyleClass().add("ghost");
-        bar.getChildren().addAll(rango, sp, export);
+        Button cancelar = new Button("Cancelar venta");
+        cancelar.getStyleClass().add("button");
+        cancelar.getStyleClass().add("danger");
+        cancelar.setDisable(!session.isAdmin());
+        cancelar.setOnAction(e -> {
+            TextInputDialog dlg = new TextInputDialog();
+            dlg.setTitle("Cancelar venta");
+            dlg.setHeaderText("Ingrese el ID de la venta a cancelar");
+            dlg.setContentText("ID de ticket/venta:");
+            dlg.showAndWait().ifPresent(id -> {
+                String v = id == null ? "" : id.trim();
+                if (v.isEmpty())
+                    return;
+                // Confirmación
+                Alert c = new Alert(Alert.AlertType.CONFIRMATION);
+                c.setTitle("Confirmar cancelación");
+                c.setHeaderText("¿Cancelar la venta " + v + "?");
+                c.setContentText("Esta acción repone inventario y elimina el ticket.");
+                java.util.Optional<ButtonType> rr = c.showAndWait();
+                if (rr.isEmpty() || rr.get() != ButtonType.OK)
+                    return;
+
+                boolean ok = sales.cancelarVenta(v, session.isAdmin());
+                Alert a = new Alert(ok ? Alert.AlertType.INFORMATION : Alert.AlertType.WARNING);
+                a.setTitle("Cancelar venta");
+                a.setHeaderText(ok ? "Venta cancelada" : "No autorizado o venta inexistente");
+                a.setContentText(ok ? "La venta fue cancelada y el inventario repuesto."
+                        : "Verifique el ID y el rol del usuario.");
+                a.showAndWait();
+            });
+        });
+
+        bar.getChildren().addAll(rango, sp, export, cancelar);
 
         // KPIs
         HBox kpis = new HBox(12,
