@@ -87,7 +87,7 @@
     "unidad": "rollo",
     "contenido": 10.0,
     "precio": 26.0,
-    "stock": 23.849999999999998
+    "stock": 1.0
   },
   {
     "sku": "LI-002",
@@ -222,7 +222,7 @@
     "unidad": "caja",
     "contenido": 30.0,
     "precio": 150.0,
-    "stock": 9.0
+    "stock": 1.0
   },
   {
     "sku": "CI-001",

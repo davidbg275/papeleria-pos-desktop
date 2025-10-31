@@ -128,3 +128,35 @@
 .stock-ok   { -fx-text-fill: #16a34a; } /* verde */
 .stock-low  { -fx-text-fill: #ea580c; } /* naranja */
 .stock-zero { -fx-text-fill: #dc2626; } /* rojo */
+
+/* Botones */
+.button { -fx-background-radius: 10; -fx-font-weight: 700; }
+.primary { -fx-background-color: #0ea5e9; -fx-text-fill: white; }
+.success { -fx-background-color: #16a34a; -fx-text-fill: white; }
+.ghost { -fx-background-color: transparent; -fx-border-color: #334155; -fx-text-fill: #e2e8f0; -fx-background-radius: 10; -fx-border-radius: 10; }
+.danger { -fx-background-color: #dc2626; -fx-text-fill: white; }
+
+/* Stepper */
+.stepper { -fx-alignment: center-left; }
+.step-num { -fx-background-radius: 999; -fx-padding: 6 10; -fx-background-color: rgba(59,130,246,0.15); -fx-text-fill: #0284c7; -fx-font-weight: 800; }
+.step-num.active { -fx-background-color: #0ea5e9; -fx-text-fill: white; }
+.step-text { -fx-text-fill: #3b82f6; -fx-font-weight: 700; }
+.step-sep { -fx-background-color: rgba(2,132,199,0.25); -fx-min-height: 2; -fx-max-height: 2; }
+
+/* Cards y layout */
+.page { -fx-spacing: 12; }
+.card { -fx-background-radius: 12; -fx-border-color: rgba(148,163,184,0.25); -fx-border-radius: 12; }*/
+.card-title { -fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: #e2e8f0; }
+
+.kpi-value { -fx-font-size: 22px; -fx-font-weight: 900; }
+.ok-pill { -fx-background-color: rgba(34,197,94,0.15); -fx-text-fill: #22c55e; -fx-padding: 2 8; -fx-background-radius: 999; }
+.warn-pill { -fx-background-color: rgba(234,88,12,0.15); -fx-text-fill: #ea580c; -fx-padding: 2 8; -fx-background-radius: 999; }
+.chip { -fx-background-radius: 10; }
+.total-fabricar { -fx-font-size: 22px; -fx-font-weight: 900; -fx-text-fill: #0ea5e9; }
+
+/* AlertBanner (si usas las clases alert-*) */
+.alert { -fx-background-radius: 10; -fx-padding: 8 10; }
+.alert-danger { -fx-background-color: rgba(220,38,38,0.15); -fx-text-fill: #fecaca; }
+.alert-warn { -fx-background-color: rgba(234,88,12,0.15); -fx-text-fill: #fed7aa; }
+.alert-success { -fx-background-color: rgba(22,163,74,0.15); -fx-text-fill: #bbf7d0; }
+.alert-info { -fx-background-color: rgba(14,165,233,0.15); -fx-text-fill: #bae6fd; }

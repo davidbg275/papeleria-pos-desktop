@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
-// Import POI con nombres totalmente calificados para evitar ambigüedades Cell
 public class InventoryService {
     private final StorageService storage;
     private final EventBus bus;
@@ -31,17 +30,13 @@ public class InventoryService {
                 (p.getCategoria() != null && p.getCategoria().toLowerCase().contains(s))).collect(Collectors.toList());
     }
 
-    public java.util.Optional<com.papeleria.pos.models.Product> findBySku(String sku) {
-        java.util.List<com.papeleria.pos.models.Product> all = list();
-        for (com.papeleria.pos.models.Product p : all) {
-            if (p.getSku() != null && p.getSku().equalsIgnoreCase(sku)) {
-                return java.util.Optional.of(p);
-            }
+    public Optional<Product> findBySku(String sku) {
+        for (Product p : list()) {
+            if (p.getSku() != null && p.getSku().equalsIgnoreCase(sku))
+                return Optional.of(p);
         }
-        return java.util.Optional.empty();
+        return Optional.empty();
     }
-
-
 
     public void upsert(Product np) {
         List<Product> all = list();
@@ -85,6 +80,7 @@ public class InventoryService {
         bus.publish(EventBus.Topic.INVENTORY_CHANGED, null);
     }
 
+    // ===== Importar desde Excel (.xlsx) =====
     public int importFromExcel(Path xlsxPath) throws IOException {
         if (xlsxPath == null || !Files.exists(xlsxPath))
             throw new IOException("Archivo no encontrado");
@@ -149,5 +145,26 @@ public class InventoryService {
         } catch (Exception e) {
             return 0.0;
         }
+    }
+
+    // ===== Conversión y pretty =====
+    /** Convierte cantidad en UNIDAD del producto a su unidad base para stock. */
+    public double toBase(Product p, double qtyInProductUnit) {
+        String u = p.getUnidad() == null ? "" : p.getUnidad().trim().toLowerCase();
+        double c = Math.max(0.0, p.getContenido());
+        if (u.equals("paquete") || u.equals("caja") || u.equals("rollo"))
+            return c > 0 ? qtyInProductUnit * c : qtyInProductUnit;
+        return qtyInProductUnit; // m/metro/metros o unidad ya están en base
+    }
+
+    /** Texto legible de equivalencia base. */
+    public String prettyBase(Product p, double qtyInProductUnit) {
+        double base = toBase(p, qtyInProductUnit);
+        String u = p.getUnidad() == null ? "" : p.getUnidad().trim().toLowerCase();
+        if (u.equals("rollo"))
+            return base >= 1 ? String.format("≈ %.2f m", base) : String.format("≈ %.0f cm", base * 100);
+        String name = p.getNombre() == null ? "" : p.getNombre().toLowerCase();
+        String menor = name.contains("hoja") ? "hojas" : "pzas";
+        return String.format("≈ %.0f %s", base, menor);
     }
 }
