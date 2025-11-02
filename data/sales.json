@@ -788,5 +788,21 @@
     "total": 2.5,
     "efectivo": 3.0,
     "cambio": 0.5
+  },
+  {
+    "id": "d5796d15",
+    "fecha": "2025-11-02T00:22:59.887240675",
+    "items": [
+      {
+        "sku": "flor123",
+        "nombre": "flor",
+        "cantidadBase": 1.0,
+        "precioUnitario": 3.9,
+        "subtotal": 3.9
+      }
+    ],
+    "total": 4.0,
+    "efectivo": 5.0,
+    "cambio": 1.0
   }
 ]

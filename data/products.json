@@ -87,7 +87,7 @@
     "unidad": "rollo",
     "contenido": 10.0,
     "precio": 26.0,
-    "stock": 0.79
+    "stock": 0.19000000000000003
   },
   {
     "sku": "LI-002",
@@ -243,75 +243,21 @@
     "stock": 10.0
   },
   {
-    "sku": "PF-54001",
-    "nombre": "dsdssd",
+    "sku": "azsa",
+    "nombre": "zzkzzkk",
     "categoria": "Producción",
-    "unidad": "pza",
-    "contenido": 0.0,
-    "precio": 0.03900000000000001,
+    "unidad": "Unidad",
+    "contenido": 1.0,
+    "precio": 3.9,
     "stock": 1.0
   },
   {
-    "sku": "asdsa",
-    "nombre": "opxe",
+    "sku": "flor123",
+    "nombre": "flor",
     "categoria": "Producción",
-    "unidad": "pza",
-    "contenido": 0.0,
-    "precio": 82.5,
-    "stock": 1.0
-  },
-  {
-    "sku": "123",
-    "nombre": "amulp",
-    "categoria": "Producción",
-    "unidad": "pza",
-    "contenido": 0.0,
-    "precio": 60.0,
-    "stock": 1.0
-  },
-  {
-    "sku": "isela1232",
-    "nombre": "alesi",
-    "categoria": "Producción",
-    "unidad": "pza",
-    "contenido": 0.0,
-    "precio": 3.9000000000000004,
-    "stock": 1.0
-  },
-  {
-    "sku": "12ss",
-    "nombre": "sa",
-    "categoria": "Producción",
-    "unidad": "pza",
-    "contenido": 0.0,
-    "precio": 3.9000000000000004,
-    "stock": 1.0
-  },
-  {
-    "sku": "11111",
-    "nombre": "1111111",
-    "categoria": "Producción",
-    "unidad": "pza",
-    "contenido": 0.0,
-    "precio": 3.9000000000000004,
-    "stock": 1.0
-  },
-  {
-    "sku": "111222",
-    "nombre": "222",
-    "categoria": "Producción",
-    "unidad": "pza",
-    "contenido": 0.0,
-    "precio": 6.0,
-    "stock": 1.0
-  },
-  {
-    "sku": "1112222222",
-    "nombre": "22211122",
-    "categoria": "Producción",
-    "unidad": "pza",
-    "contenido": 0.0,
-    "precio": 0.39,
-    "stock": 1.0
+    "unidad": "Unidad",
+    "contenido": 1.0,
+    "precio": 3.9,
+    "stock": 0.0
   }
 ]

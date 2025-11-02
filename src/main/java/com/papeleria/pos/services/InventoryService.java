@@ -47,7 +47,7 @@ public class InventoryService {
             e.setCategoria(np.getCategoria());
             e.setUnidad(np.getUnidad());
             e.setContenido(np.getContenido());
-            e.setPrecio(np.getPrecio());
+            e.setPrecio(round2(np.getPrecio()));
             e.setStock(np.getStock());
         } else {
             all.add(np);
@@ -167,4 +167,9 @@ public class InventoryService {
         String menor = name.contains("hoja") ? "hojas" : "pzas";
         return String.format("≈ %.0f %s", base, menor);
     }
+
+    private double round2(double v) {
+        return Math.round(v * 100.0) / 100.0;
+    }
+
 }

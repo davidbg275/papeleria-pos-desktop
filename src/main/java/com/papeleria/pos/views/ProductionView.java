@@ -465,7 +465,7 @@ public class ProductionView extends BorderPane {
             return;
         }
 
-        List<ProductionService.InsumoReq> reqs = new ArrayList<>();
+        List<ProductionService.InsumoReq> reqs = new java.util.ArrayList<>();
         for (Insumo in : insumos)
             reqs.add(new ProductionService.InsumoReq(in.prod.getSku(), in.cantidadPorProducto));
 
@@ -484,11 +484,12 @@ public class ProductionView extends BorderPane {
             return;
         }
 
-        // Fijar precio del PF en inventario
+        // fijar precio final redondeado y normalizar PF
         double precioDir = parseDouble(precioDirecto.getText(), -1.0);
         double precioFinal = precioDir > 0 ? precioDir : (sug[0] == null ? 0.0 : sug[0]);
+        precioFinal = Math.round(precioFinal * 100.0) / 100.0;
 
-        Product pf = null;
+        com.papeleria.pos.models.Product pf = null;
         if (skuFinal.getText() != null && !skuFinal.getText().isBlank()) {
             pf = inventory.findBySku(skuFinal.getText().trim()).orElse(null);
         }
@@ -499,10 +500,9 @@ public class ProductionView extends BorderPane {
         }
         if (pf != null) {
             pf.setPrecio(precioFinal);
-            if (safe(pf.getCategoria()).isBlank())
-                pf.setCategoria("Producción");
-            if (safe(pf.getUnidad()).isBlank())
-                pf.setUnidad("pza");
+            pf.setCategoria("Producción");
+            pf.setUnidad("Unidad");
+            pf.setContenido(1.0);
             inventory.upsert(pf);
         }
 
