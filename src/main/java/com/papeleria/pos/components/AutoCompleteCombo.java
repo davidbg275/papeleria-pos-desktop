@@ -3,98 +3,157 @@ package com.papeleria.pos.components;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.control.ComboBox;
-import javafx.util.StringConverter;
+import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
-/** Autocompletado seguro para ComboBox editable (evita reentradas/loops). */
+/**
+ * Autocomplete NO intrusivo para ComboBox editable.
+ * - Filtra mientras escribes. No reescribe el texto ni mueve el caret.
+ * - Acepta sugerencia solo con TAB/ENTER o seleccionando en el popup.
+ * - Permite borrar normalmente (Backspace/Delete) sin re-autocompletar.
+ * - Mantiene items completos (no bloquea edición).
+ */
 public class AutoCompleteCombo<T> {
+
     private final ComboBox<T> combo;
-    private final List<T> master;               // lista base inmutable
-    private final Function<T,String> toText;
-    private volatile boolean updating = false;  // guardia anti-reentrada
+    private final Function<T, String> toText;
+    private final ObservableList<T> master;
+    private boolean updating = false; // evita recursión
 
-    public AutoCompleteCombo(ComboBox<T> combo, List<T> items, Function<T,String> toText) {
+    public AutoCompleteCombo(ComboBox<T> combo, List<T> items, Function<T, String> toText) {
         this.combo = combo;
-        this.master = new ArrayList<>(items);
         this.toText = toText;
+        this.master = FXCollections.observableArrayList(items);
+        init();
+    }
 
+    private void init() {
         combo.setEditable(true);
-        combo.setItems(FXCollections.observableArrayList(master));
+        combo.setItems(master);
 
-        // Conversor consistente con el texto mostrado
-        combo.setConverter(new StringConverter<T>() {
-            @Override public String toString(T obj) { return obj == null ? "" : toText.apply(obj); }
-            @Override public T fromString(String s) {
-                if (s == null) return null;
-                String needle = s.trim();
-                return master.stream()
-                        .filter(it -> toText.apply(it).equalsIgnoreCase(needle))
-                        .findFirst()
-                        .orElse(null);
-            }
+        ensureEditorLTR();
+        final TextField ed = combo.getEditor();
+
+        // Filtrar mientras escribe (no tocar el texto del editor)
+        ed.textProperty().addListener((obs, old, now) -> {
+            if (updating)
+                return;
+            filter(now);
         });
 
-        // Filtrado en tiempo real
-        combo.getEditor().textProperty().addListener((obs, oldText, newText) -> {
-            if (updating) return;
-            updating = true;
-
-            String q = newText == null ? "" : newText.trim().toLowerCase();
-            List<T> filtered = q.isEmpty()
-                    ? master
-                    : master.stream()
-                            .filter(it -> toText.apply(it).toLowerCase().contains(q))
-                            .collect(Collectors.toList());
-
-            // Preservar seleccionado si aún está
-            T selected = combo.getSelectionModel().getSelectedItem();
-
-            // Evitar trabajo si la lista ya coincide (opcional)
-            ObservableList<T> current = combo.getItems();
-            if (!(current.size() == filtered.size() && current.containsAll(filtered))) {
-                combo.getItems().setAll(filtered);
-            }
-
-            if (selected != null && filtered.contains(selected)) {
-                combo.getSelectionModel().select(selected);
+        // Teclas: aceptar con TAB/ENTER; limpiar selección en cualquier edición
+        ed.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+            if (e.getCode() == KeyCode.TAB || e.getCode() == KeyCode.ENTER) {
+                T first = firstStartsWith(ed.getText());
+                if (first != null) {
+                    accept(first);
+                    e.consume();
+                }
             } else {
+                // Cualquier tecla de edición rompe la selección para que puedas borrar o seguir
+                // escribiendo
                 combo.getSelectionModel().clearSelection();
             }
 
-            // Mostrar popup si hay resultados y hay query
-            if (!filtered.isEmpty() && !q.isEmpty() && !combo.isShowing()) {
-                combo.show();
+            if (e.getCode() == KeyCode.DOWN) {
+                if (!combo.isShowing())
+                    combo.show();
             }
-
-            // Restaurar texto/caret (tras los cambios de items)
-            int caret = combo.getEditor().getCaretPosition();
-            Platform.runLater(() -> {
-                combo.getEditor().setText(newText);
-                combo.getEditor().positionCaret(Math.min(caret, combo.getEditor().getText().length()));
-            });
-
-            updating = false;
         });
 
-        // Al perder foco: fijar value si el texto coincide exactamente con un item
-        combo.getEditor().focusedProperty().addListener((o, was, now) -> {
-            if (now) return;
-            if (updating) return;
+        // Al seleccionar desde la lista, reflejar en el editor
+        combo.getSelectionModel().selectedItemProperty().addListener((o, a, v) -> {
+            if (updating)
+                return;
+            if (v == null)
+                return;
+            accept(v);
+        });
+    }
+
+    private void ensureEditorLTR() {
+        TextField ed = combo.getEditor();
+        if (ed != null) {
+            ed.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            return;
+        }
+        combo.skinProperty().addListener((o, a, s) -> {
+            TextField e = combo.getEditor();
+            if (e != null)
+                e.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        });
+    }
+
+    private void filter(String text) {
+        String p = norm(text);
+        if (p.isEmpty()) {
             updating = true;
-            String txt = combo.getEditor().getText();
-            if (txt != null) {
-                T exact = master.stream()
-                        .filter(it -> toText.apply(it).equalsIgnoreCase(txt.trim()))
-                        .findFirst()
-                        .orElse(null);
-                if (exact != null) combo.setValue(exact);  // aquí sí es seguro
-            }
+            combo.setItems(master);
+            combo.getSelectionModel().clearSelection();
             updating = false;
-        });
+            combo.hide();
+            return;
+        }
+
+        ObservableList<T> filtered = FXCollections.observableArrayList();
+        for (T t : master) {
+            String s = norm(textOf(t));
+            if (s.startsWith(p))
+                filtered.add(t);
+        }
+
+        updating = true;
+        combo.setItems(filtered.isEmpty() ? FXCollections.observableArrayList() : filtered);
+        updating = false;
+
+        if (!filtered.isEmpty()) {
+            if (!combo.isShowing())
+                combo.show();
+        } else {
+            combo.hide();
+        }
+    }
+
+    private void accept(T value) {
+        String s = textOf(value);
+        updating = true;
+        combo.getEditor().setText(s);
+        combo.getEditor().positionCaret(s.length());
+        combo.getEditor().deselect();
+        combo.getSelectionModel().select(value);
+        // Mantener catálogo completo para permitir seguir editando o borrar
+        combo.setItems(master);
+        updating = false;
+        Platform.runLater(combo::hide);
+    }
+
+    private T firstStartsWith(String prefix) {
+        String p = norm(prefix);
+        if (p.isEmpty())
+            return null;
+        for (T t : master) {
+            if (norm(textOf(t)).startsWith(p))
+                return t;
+        }
+        return null;
+    }
+
+    private String textOf(T t) {
+        if (t == null)
+            return "";
+        String s = toText == null ? Objects.toString(t, "") : toText.apply(t);
+        return s == null ? "" : s;
+    }
+
+    private String norm(String s) {
+        return s == null ? "" : s.toLowerCase(Locale.ROOT).trim();
     }
 }

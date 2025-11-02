@@ -6,7 +6,7 @@
     "unidad": "paquete",
     "contenido": 500.0,
     "precio": 110.0,
-    "stock": 27.95798000000002
+    "stock": 11.95798000000002
   },
   {
     "sku": "HO-002",
@@ -87,7 +87,7 @@
     "unidad": "rollo",
     "contenido": 10.0,
     "precio": 26.0,
-    "stock": 0.19000000000000003
+    "stock": 0.09000000000000002
   },
   {
     "sku": "LI-002",
@@ -96,7 +96,7 @@
     "unidad": "rollo",
     "contenido": 10.0,
     "precio": 29.0,
-    "stock": 7.9
+    "stock": 5.9
   },
   {
     "sku": "LI-003",
@@ -105,7 +105,7 @@
     "unidad": "rollo",
     "contenido": 20.0,
     "precio": 49.0,
-    "stock": 10.0
+    "stock": 9.549999999999999
   },
   {
     "sku": "TE-001",
@@ -114,7 +114,7 @@
     "unidad": "m",
     "contenido": 1.0,
     "precio": 75.0,
-    "stock": 100.0
+    "stock": 98.0
   },
   {
     "sku": "CU-001",
@@ -123,7 +123,7 @@
     "unidad": "pieza",
     "contenido": 1.0,
     "precio": 45.0,
-    "stock": 50.0
+    "stock": 48.0
   },
   {
     "sku": "CU-002",
@@ -186,16 +186,16 @@
     "unidad": "pieza",
     "contenido": 1.0,
     "precio": 20.0,
-    "stock": 1.0
+    "stock": 0.0
   },
   {
     "sku": "CA-001",
     "nombre": "Cartulina Blanca",
     "categoria": "Papelería",
-    "unidad": "pieza",
+    "unidad": "Unidad",
     "contenido": 1.0,
     "precio": 5.5,
-    "stock": 65.0
+    "stock": 66.0
   },
   {
     "sku": "CA-002",
@@ -243,21 +243,30 @@
     "stock": 10.0
   },
   {
-    "sku": "azsa",
-    "nombre": "zzkzzkk",
+    "sku": "FL-001",
+    "nombre": "Flor-Azul",
     "categoria": "Producción",
     "unidad": "Unidad",
     "contenido": 1.0,
-    "precio": 3.9,
+    "precio": 3000.0,
+    "stock": 2.0
+  },
+  {
+    "sku": "FL-002",
+    "nombre": "Flor-Roja",
+    "categoria": "Producción",
+    "unidad": "Unidad",
+    "contenido": 1.0,
+    "precio": 3000.0,
     "stock": 1.0
   },
   {
-    "sku": "flor123",
-    "nombre": "flor",
+    "sku": "FL-003",
+    "nombre": "Florverde",
     "categoria": "Producción",
     "unidad": "Unidad",
     "contenido": 1.0,
-    "precio": 3.9,
-    "stock": 0.0
+    "precio": 3000.0,
+    "stock": 1.0
   }
 ]
