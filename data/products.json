@@ -42,7 +42,7 @@
     "unidad": "caja",
     "contenido": 12.0,
     "precio": 48.0,
-    "stock": 20.0
+    "stock": 9.916666666666666
   },
   {
     "sku": "PL-002",
@@ -87,7 +87,7 @@
     "unidad": "rollo",
     "contenido": 10.0,
     "precio": 26.0,
-    "stock": 1.0
+    "stock": 0.79
   },
   {
     "sku": "LI-002",
@@ -96,7 +96,7 @@
     "unidad": "rollo",
     "contenido": 10.0,
     "precio": 29.0,
-    "stock": 18.0
+    "stock": 7.9
   },
   {
     "sku": "LI-003",
@@ -114,7 +114,7 @@
     "unidad": "m",
     "contenido": 1.0,
     "precio": 75.0,
-    "stock": 120.0
+    "stock": 100.0
   },
   {
     "sku": "CU-001",
@@ -195,7 +195,7 @@
     "unidad": "pieza",
     "contenido": 1.0,
     "precio": 5.5,
-    "stock": 75.0
+    "stock": 65.0
   },
   {
     "sku": "CA-002",
@@ -241,5 +241,77 @@
     "contenido": 6.0,
     "precio": 66.0,
     "stock": 10.0
+  },
+  {
+    "sku": "PF-54001",
+    "nombre": "dsdssd",
+    "categoria": "Producción",
+    "unidad": "pza",
+    "contenido": 0.0,
+    "precio": 0.03900000000000001,
+    "stock": 1.0
+  },
+  {
+    "sku": "asdsa",
+    "nombre": "opxe",
+    "categoria": "Producción",
+    "unidad": "pza",
+    "contenido": 0.0,
+    "precio": 82.5,
+    "stock": 1.0
+  },
+  {
+    "sku": "123",
+    "nombre": "amulp",
+    "categoria": "Producción",
+    "unidad": "pza",
+    "contenido": 0.0,
+    "precio": 60.0,
+    "stock": 1.0
+  },
+  {
+    "sku": "isela1232",
+    "nombre": "alesi",
+    "categoria": "Producción",
+    "unidad": "pza",
+    "contenido": 0.0,
+    "precio": 3.9000000000000004,
+    "stock": 1.0
+  },
+  {
+    "sku": "12ss",
+    "nombre": "sa",
+    "categoria": "Producción",
+    "unidad": "pza",
+    "contenido": 0.0,
+    "precio": 3.9000000000000004,
+    "stock": 1.0
+  },
+  {
+    "sku": "11111",
+    "nombre": "1111111",
+    "categoria": "Producción",
+    "unidad": "pza",
+    "contenido": 0.0,
+    "precio": 3.9000000000000004,
+    "stock": 1.0
+  },
+  {
+    "sku": "111222",
+    "nombre": "222",
+    "categoria": "Producción",
+    "unidad": "pza",
+    "contenido": 0.0,
+    "precio": 6.0,
+    "stock": 1.0
+  },
+  {
+    "sku": "1112222222",
+    "nombre": "22211122",
+    "categoria": "Producción",
+    "unidad": "pza",
+    "contenido": 0.0,
+    "precio": 0.39,
+    "stock": 1.0
   }
 ]

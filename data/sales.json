@@ -740,5 +740,53 @@
     "total": 32.0,
     "efectivo": 50.0,
     "cambio": 18.0
+  },
+  {
+    "id": "ec635a2e",
+    "fecha": "2025-11-01T23:18:34.995419451",
+    "items": [
+      {
+        "sku": "LI-001",
+        "nombre": "Listón Rojo 1cm x 10m",
+        "cantidadBase": 0.2,
+        "precioUnitario": 26.0,
+        "subtotal": 5.2
+      }
+    ],
+    "total": 5.0,
+    "efectivo": 6.0,
+    "cambio": 1.0
+  },
+  {
+    "id": "66f349c1",
+    "fecha": "2025-11-01T23:52:21.357950512",
+    "items": [
+      {
+        "sku": "LI-002",
+        "nombre": "Listón Azul 2cm x 10m",
+        "cantidadBase": 0.1,
+        "precioUnitario": 29.0,
+        "subtotal": 2.9000000000000004
+      }
+    ],
+    "total": 3.0,
+    "efectivo": 5.0,
+    "cambio": 2.0
+  },
+  {
+    "id": "4c39afe8",
+    "fecha": "2025-11-01T23:52:58.760880285",
+    "items": [
+      {
+        "sku": "LI-001",
+        "nombre": "Listón Rojo 1cm x 10m",
+        "cantidadBase": 0.1,
+        "precioUnitario": 26.0,
+        "subtotal": 2.6
+      }
+    ],
+    "total": 2.5,
+    "efectivo": 3.0,
+    "cambio": 0.5
   }
 ]
