@@ -1,151 +1,139 @@
 package com.papeleria.pos.components;
 
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.TextField;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
+import javafx.util.Callback;
+import javafx.util.StringConverter;
 
-import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
- * Autocomplete no intrusivo para ComboBox editable.
- * - Filtra al escribir sin modificar el editor.
- * - Acepta sugerencia solo con TAB o con clic en la lista.
- * - ENTER/SPACE no aceptan; Backspace/Delete no seleccionan nada.
+ * Autocompletado simple para ComboBox editable.
+ * Reglas:
+ * - NO confirma con ESPACIO.
+ * - Sólo confirma con ENTER o click del mouse.
+ * - BACKSPACE/DELETE funcionan normal y no fuerzan selección.
+ * - Si se borra todo, se limpia la selección.
  */
 public class AutoCompleteCombo<T> {
-    private final ComboBox<T> combo;
-    private final Function<T, String> toText;
-    private final ObservableList<T> master;
-    private boolean updating = false;
 
-    public AutoCompleteCombo(ComboBox<T> combo, List<T> items, Function<T, String> toText) {
+    private final ComboBox<T> combo;
+    private final ObservableList<T> master;
+    private final Function<T, String> toText;
+    private boolean programmaticChange = false;
+
+    public AutoCompleteCombo(ComboBox<T> combo, ObservableList<T> items, Function<T, String> toText) {
         this.combo = combo;
         this.master = FXCollections.observableArrayList(items);
         this.toText = toText;
-        init();
-    }
 
-    private void init() {
+        combo.setItems(FXCollections.observableArrayList(master));
         combo.setEditable(true);
-        combo.setItems(master);
-        ensureEditorLTR();
+        combo.setVisibleRowCount(10);
 
-        final TextField ed = combo.getEditor();
+        // Converter estable
+        combo.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(T object) {
+                return object == null ? "" : AutoCompleteCombo.this.toText.apply(object);
+            }
 
-        // Filtrar sin tocar el texto
-        ed.textProperty().addListener((obs, old, now) -> {
-            if (updating)
-                return;
-            filter(now);
+            @Override
+            public T fromString(String string) {
+                return combo.getValue();
+            }
         });
 
-        // Teclas: solo TAB acepta. ENTER/SPACE se ignoran y se consumen.
-        ed.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
-            if (e.getCode() == KeyCode.TAB) {
-                T first = firstStartsWith(ed.getText());
-                if (first != null) {
-                    accept(first);
-                    e.consume();
+        // Celdas con texto seguro
+        Callback<ListView<T>, ListCell<T>> cellFactory = lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(T item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : AutoCompleteCombo.this.toText.apply(item));
+            }
+        };
+        combo.setCellFactory(cellFactory);
+        combo.setButtonCell(cellFactory.call(null));
+
+        // Filtro mientras escribe
+        ChangeListener<String> textListener = (obs, old, val) -> {
+            if (programmaticChange)
+                return;
+            String q = (val == null ? "" : val).trim().toLowerCase();
+            if (q.isEmpty()) {
+                combo.getItems().setAll(master);
+                combo.getSelectionModel().clearSelection();
+                return;
+            }
+            var filtered = master.stream()
+                    .filter(it -> AutoCompleteCombo.this.toText.apply(it).toLowerCase().contains(q))
+                    .collect(Collectors.toList());
+            combo.getItems().setAll(filtered);
+            combo.show();
+        };
+        combo.getEditor().textProperty().addListener(textListener);
+
+        // Teclado: ENTER confirma, ESPACIO no confirma
+        combo.getEditor().setOnKeyPressed(e -> {
+            if (e.getCode() == KeyCode.ENTER) {
+                if (!combo.getItems().isEmpty()) {
+                    // si hay coincidencia exacta usa esa, si no la primera visible
+                    T exact = combo.getItems().stream()
+                            .filter(it -> Objects.equals(toText.apply(it), combo.getEditor().getText()))
+                            .findFirst().orElse(null);
+                    if (exact == null)
+                        exact = combo.getItems().get(0);
+                    final T pick = exact;
+                    programmaticChange = true;
+                    combo.setValue(pick);
+                    combo.getEditor().setText(toText.apply(pick));
+                    combo.getEditor().positionCaret(combo.getEditor().getText().length());
+                    programmaticChange = false;
                 }
-                return;
-            }
-            if (e.getCode() == KeyCode.ENTER || e.getCode() == KeyCode.SPACE) {
-                // Evitar que ComboBox acepte/seleccione el primer ítem
                 e.consume();
-                return;
+            } else if (e.getCode() == KeyCode.SPACE) {
+                // Sólo inserta espacio en el editor, no confirma nada.
+                // No se consume el evento.
+            } else if (e.getCode() == KeyCode.ESCAPE) {
+                combo.hide();
             }
-            // Cualquier edición limpia selección para permitir borrar/escribir
-            combo.getSelectionModel().clearSelection();
-            if (e.getCode() == KeyCode.DOWN && !combo.isShowing())
-                combo.show();
         });
 
-        // Selección con el popup
-        combo.getSelectionModel().selectedItemProperty().addListener((o, a, v) -> {
-            if (updating || v == null)
+        // Click confirma
+        combo.setOnMouseClicked(ev -> combo.show());
+        combo.setOnAction(ev -> {
+            if (programmaticChange)
                 return;
-            accept(v);
+            // acción normal cuando el usuario hace click
+            T v = combo.getSelectionModel().getSelectedItem();
+            if (v != null) {
+                programmaticChange = true;
+                combo.getEditor().setText(toText.apply(v));
+                combo.getEditor().positionCaret(combo.getEditor().getText().length());
+                programmaticChange = false;
+            }
         });
-    }
 
-    private void ensureEditorLTR() {
-        TextField ed = combo.getEditor();
-        if (ed != null) {
-            ed.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-            return;
-        }
-        combo.skinProperty().addListener((o, a, s) -> {
-            TextField e = combo.getEditor();
-            if (e != null)
-                e.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        // Sincronizar al cambiar value externamente
+        combo.valueProperty().addListener((o, a, v) -> {
+            programmaticChange = true;
+            combo.getEditor().setText(v == null ? "" : toText.apply(v));
+            combo.getEditor().positionCaret(combo.getEditor().getText().length());
+            programmaticChange = false;
         });
-    }
 
-    private void filter(String text) {
-        String p = norm(text);
-        if (p.isEmpty()) {
-            updating = true;
-            combo.setItems(master);
+        // Inicial
+        Platform.runLater(() -> {
+            combo.getEditor().setText("");
             combo.getSelectionModel().clearSelection();
-            updating = false;
-            combo.hide();
-            return;
-        }
-        ObservableList<T> filtered = FXCollections.observableArrayList();
-        for (T t : master)
-            if (norm(textOf(t)).startsWith(p))
-                filtered.add(t);
-
-        updating = true;
-        combo.setItems(filtered);
-        updating = false;
-
-        if (!filtered.isEmpty()) {
-            if (!combo.isShowing())
-                combo.show();
-        } else
-            combo.hide();
-    }
-
-    private void accept(T value) {
-        String s = textOf(value);
-        updating = true;
-        combo.getEditor().setText(s);
-        combo.getEditor().positionCaret(s.length());
-        combo.getEditor().deselect();
-        combo.getSelectionModel().select(value);
-        // Catálogo completo otra vez para no “anclar” la búsqueda
-        combo.setItems(master);
-        updating = false;
-        Platform.runLater(combo::hide);
-    }
-
-    private T firstStartsWith(String prefix) {
-        String p = norm(prefix);
-        if (p.isEmpty())
-            return null;
-        for (T t : master)
-            if (norm(textOf(t)).startsWith(p))
-                return t;
-        return null;
-    }
-
-    private String textOf(T t) {
-        if (t == null)
-            return "";
-        String s = toText == null ? Objects.toString(t, "") : toText.apply(t);
-        return s == null ? "" : s;
-    }
-
-    private String norm(String s) {
-        return s == null ? "" : s.toLowerCase(Locale.ROOT).trim();
+        });
     }
 }

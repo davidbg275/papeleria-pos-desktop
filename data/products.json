@@ -6,7 +6,7 @@
     "unidad": "paquete",
     "contenido": 500.0,
     "precio": 110.0,
-    "stock": 11.95798000000002
+    "stock": 10.0
   },
   {
     "sku": "HO-002",
@@ -15,7 +15,7 @@
     "unidad": "paquete",
     "contenido": 100.0,
     "precio": 32.0,
-    "stock": 32.0
+    "stock": 40.0
   },
   {
     "sku": "HO-003",
@@ -24,7 +24,7 @@
     "unidad": "paquete",
     "contenido": 100.0,
     "precio": 32.0,
-    "stock": 24.0
+    "stock": 25.0
   },
   {
     "sku": "HO-004",
@@ -42,7 +42,7 @@
     "unidad": "caja",
     "contenido": 12.0,
     "precio": 48.0,
-    "stock": 9.916666666666666
+    "stock": 20.0
   },
   {
     "sku": "PL-002",
@@ -87,7 +87,7 @@
     "unidad": "rollo",
     "contenido": 10.0,
     "precio": 26.0,
-    "stock": 0.09000000000000002
+    "stock": 25.0
   },
   {
     "sku": "LI-002",
@@ -96,7 +96,7 @@
     "unidad": "rollo",
     "contenido": 10.0,
     "precio": 29.0,
-    "stock": 5.9
+    "stock": 18.0
   },
   {
     "sku": "LI-003",
@@ -105,7 +105,7 @@
     "unidad": "rollo",
     "contenido": 20.0,
     "precio": 49.0,
-    "stock": 9.549999999999999
+    "stock": 10.0
   },
   {
     "sku": "TE-001",
@@ -114,7 +114,7 @@
     "unidad": "m",
     "contenido": 1.0,
     "precio": 75.0,
-    "stock": 98.0
+    "stock": 120.0
   },
   {
     "sku": "CU-001",
@@ -123,7 +123,7 @@
     "unidad": "pieza",
     "contenido": 1.0,
     "precio": 45.0,
-    "stock": 48.0
+    "stock": 50.0
   },
   {
     "sku": "CU-002",
@@ -186,16 +186,16 @@
     "unidad": "pieza",
     "contenido": 1.0,
     "precio": 20.0,
-    "stock": 0.0
+    "stock": 35.0
   },
   {
     "sku": "CA-001",
     "nombre": "Cartulina Blanca",
     "categoria": "Papelería",
-    "unidad": "Unidad",
+    "unidad": "pieza",
     "contenido": 1.0,
     "precio": 5.5,
-    "stock": 66.0
+    "stock": 75.0
   },
   {
     "sku": "CA-002",
@@ -222,7 +222,7 @@
     "unidad": "caja",
     "contenido": 30.0,
     "precio": 150.0,
-    "stock": 1.0
+    "stock": 9.0
   },
   {
     "sku": "CI-001",
@@ -243,57 +243,57 @@
     "stock": 10.0
   },
   {
-    "sku": "FL-001",
-    "nombre": "Flor-Azul",
-    "categoria": "Producción",
-    "unidad": "Unidad",
-    "contenido": 1.0,
-    "precio": 3000.0,
-    "stock": 2.0
-  },
-  {
-    "sku": "FL-002",
-    "nombre": "Flor-Roja",
-    "categoria": "Producción",
-    "unidad": "Unidad",
-    "contenido": 1.0,
-    "precio": 3000.0,
-    "stock": 2.0
-  },
-  {
-    "sku": "FL-003",
-    "nombre": "Florverde",
-    "categoria": "Producción",
-    "unidad": "Unidad",
-    "contenido": 1.0,
-    "precio": 3000.0,
-    "stock": 1.0
-  },
-  {
-    "sku": "NU-001",
-    "nombre": "nuevaproduccion",
-    "categoria": "Producción",
-    "unidad": "Unidad",
-    "contenido": 1.0,
-    "precio": 4800.0,
-    "stock": 2.0
-  },
-  {
-    "sku": "HZ-002",
-    "nombre": "Silicio",
-    "categoria": "Papeleria",
-    "unidad": "Paquete",
+    "sku": "PT-909",
+    "nombre": "Plata",
+    "categoria": "papeleria",
+    "unidad": "paquete",
     "contenido": 10.0,
-    "precio": 50.0,
-    "stock": 2.0
+    "precio": 100.0,
+    "stock": 1.8
   },
   {
-    "sku": "CH-001",
-    "nombre": "Chip de silicio",
+    "sku": "CO-001",
+    "nombre": "Collar-plata",
     "categoria": "Producción",
     "unidad": "Unidad",
     "contenido": 1.0,
-    "precio": 8000.0,
+    "precio": 3300.0,
     "stock": 1.0
+  },
+  {
+    "sku": "CO-002",
+    "nombre": "collarplata2",
+    "categoria": "Producción",
+    "unidad": "Unidad",
+    "contenido": 1.0,
+    "precio": 150.0,
+    "stock": 1.0
+  },
+  {
+    "sku": "OR-001",
+    "nombre": "ORO",
+    "categoria": "papeleria",
+    "unidad": "paquete",
+    "contenido": 10.0,
+    "precio": 100.0,
+    "stock": 5.0
+  },
+  {
+    "sku": "CO-003",
+    "nombre": "collar-oro",
+    "categoria": "Producción",
+    "unidad": "Unidad",
+    "contenido": 1.0,
+    "precio": 200.0,
+    "stock": 2.0
+  },
+  {
+    "sku": "AR-001",
+    "nombre": "arete",
+    "categoria": "Producción",
+    "unidad": "Unidad",
+    "contenido": 1.0,
+    "precio": 80.0,
+    "stock": 2.0
   }
 ]

@@ -9,6 +9,7 @@
 /home/david/Documentos/papeleria-pos-desktop/src/main/java/com/papeleria/pos/services/EventBus.java
 /home/david/Documentos/papeleria-pos-desktop/src/main/java/com/papeleria/pos/services/InventoryService.java
 /home/david/Documentos/papeleria-pos-desktop/src/main/java/com/papeleria/pos/services/ProductionService.java
+/home/david/Documentos/papeleria-pos-desktop/src/main/java/com/papeleria/pos/services/RecipesStore.java
 /home/david/Documentos/papeleria-pos-desktop/src/main/java/com/papeleria/pos/services/SalesService.java
 /home/david/Documentos/papeleria-pos-desktop/src/main/java/com/papeleria/pos/services/SessionService.java
 /home/david/Documentos/papeleria-pos-desktop/src/main/java/com/papeleria/pos/services/StorageService.java

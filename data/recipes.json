@@ -1,1 +1,28 @@
-[]
+[
+  {
+    "nombre": "arete",
+    "sku": "AR-001",
+    "margen": 0.0,
+    "precioDirecto": 80.0,
+    "manoObraUnit": 0.0,
+    "items": [
+      {
+        "sku": "PT-909",
+        "cantidadBase": 1.0
+      }
+    ]
+  },
+  {
+    "nombre": "collar-oro",
+    "sku": "CO-003",
+    "margen": 50.0,
+    "precioDirecto": 0.0,
+    "manoObraUnit": 0.0,
+    "items": [
+      {
+        "sku": "PT-909",
+        "cantidadBase": 10.0
+      }
+    ]
+  }
+]

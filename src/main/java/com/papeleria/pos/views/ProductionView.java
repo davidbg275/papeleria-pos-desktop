@@ -1,6 +1,7 @@
 package com.papeleria.pos.views;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.papeleria.pos.components.AlertBanner;
 import com.papeleria.pos.components.AutoCompleteCombo;
@@ -28,7 +29,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.text.Normalizer;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+
+import com.papeleria.pos.services.RecipesStore;
 
 public class ProductionView extends BorderPane {
 
@@ -37,6 +42,7 @@ public class ProductionView extends BorderPane {
     private final ProductionService production;
     private final InventoryService inventory;
     private final EventBus bus;
+    private final RecipesStore recipes = new RecipesStore();
 
     // Estado receta
     private RecipeFile recetaActual = null;
@@ -77,10 +83,10 @@ public class ProductionView extends BorderPane {
     private final ToggleGroup precioModo = new ToggleGroup();
     private final RadioButton pmMargen = new RadioButton("Margen %");
     private final RadioButton pmDirecto = new RadioButton("Precio directo");
-    private final Spinner<Double> margen = new Spinner<>(0.0, 1000.0, 50.0, 1.0);
     private final TextField precioDirecto = new TextField();
+    private final Spinner<Double> margen = new Spinner<>(0.0, 1000.0, 50.0, 1.0);
 
-    private final Gson gson = new Gson();
+    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public ProductionView(SessionService session, ProductionService production, InventoryService inventory,
             EventBus bus) {
@@ -112,21 +118,42 @@ public class ProductionView extends BorderPane {
         material.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         material.getEditor().setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
 
-        // Recalculo
+        // Recalculo y saneo de precio directo
         cantidadPorLote.valueProperty().addListener((o, a, v) -> recalc());
         numeroLotes.valueProperty().addListener((o, a, v) -> recalc());
         manoObraUnit.valueProperty().addListener((o, a, v) -> recalc());
         margen.valueProperty().addListener((o, a, v) -> recalc());
-        precioDirecto.textProperty().addListener((o, a, v) -> recalc());
         pmMargen.setOnAction(e -> recalc());
         pmDirecto.setOnAction(e -> recalc());
-        bus.subscribe(EventBus.Topic.INVENTORY_CHANGED, ev -> Platform.runLater(this::recalc));
+        precioDirecto.textProperty().addListener((o, a, v) -> {
+            String s1 = (v == null ? "" : v).replaceAll("[^0-9.,]", "");
+            if (!s1.equals(v)) {
+                precioDirecto.setText(s1);
+                return;
+            }
+            var m = s1.replace(',', '.');
+            if (m.indexOf('.') >= 0) {
+                String[] parts = m.split("\\.", -1);
+                String d = parts.length > 1 ? parts[1] : "";
+                if (d.length() > 2)
+                    precioDirecto.setText(parts[0] + "." + d.substring(0, 2));
+            }
+            recalc();
+        });
+
+        // Inventario cambiado -> refrescar sin reiniciar
+        bus.subscribe(EventBus.Topic.INVENTORY_CHANGED, ev -> Platform.runLater(() -> {
+            cargarCatalogo();
+            renderInsumos();
+            recalc();
+        }));
 
         cargarCatalogo();
         refrescarListaRecetas();
+        startFileWatch(); // observa data/products.json y data/recetas/
 
         rbNuevo.setSelected(true);
-        aplicarModo(true); // limpia al entrar
+        aplicarModo(true);
         recalc();
     }
 
@@ -265,7 +292,7 @@ public class ProductionView extends BorderPane {
         pmDirecto.setToggleGroup(precioModo);
         pmMargen.setSelected(true);
         margen.setEditable(true);
-        precioDirecto.setPromptText("Ej: 35.00");
+        precioDirecto.setPromptText("Ej: 80.00");
         precioDirecto.setDisable(true);
         pmDirecto.selectedProperty().addListener((o, a, v) -> precioDirecto.setDisable(!v));
 
@@ -541,6 +568,7 @@ public class ProductionView extends BorderPane {
             return;
         }
 
+        // Actualiza producto final
         Product pf = inventory.findBySku(sku).orElse(null);
         if (pf != null) {
             pf.setPrecio(round2(precioFinal));
@@ -550,23 +578,44 @@ public class ProductionView extends BorderPane {
             inventory.upsert(pf);
         }
 
+        // GUARDAR RECETA cuando el flujo es "nuevo"
+        if (rbNuevo.isSelected()) {
+            RecipesStore.Recipe r = new RecipesStore.Recipe();
+            r.nombre = nombre;
+            r.sku = sku;
+            r.margen = pmMargen.isSelected() ? margen.getValue() : 0.0;
+            r.precioDirecto = pmDirecto.isSelected() ? parseD(precioDirecto.getText(), 0.0) : 0.0;
+            r.manoObraUnit = manoObraUnit.getValue();
+            r.items = new ArrayList<>();
+            for (Insumo in : insumos) {
+                RecipesStore.Item it = new RecipesStore.Item();
+                it.sku = in.prod.getSku();
+                it.cantidadBase = round2(inventory.toBase(in.prod, in.cantidadPorProducto));
+                r.items.add(it);
+            }
+            recipes.upsert(r);
+            refrescarListaRecetas();
+        }
+
         flash(AlertBanner.success("Fabricación completada"));
         if (rbNuevo.isSelected())
             aplicarModo(true);
         recalc();
-        refrescarListaRecetas();
     }
 
     /* =================== Materiales =================== */
 
     private void cargarCatalogo() {
-        material.setItems(FXCollections.observableArrayList(inventory.list()));
+        var list = new ArrayList<>(inventory.list());
+        list.sort(Comparator.comparing(Product::getNombre, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)));
+        material.setItems(FXCollections.observableArrayList(list));
     }
 
     private void agregarInsumo() {
-        Product p = material.getValue();
+        Product pSel = material.getValue();
         double qUser = cantPorProducto.getValue();
-        if (p == null) {
+
+        if (pSel == null) {
             flash(AlertBanner.warn("Selecciona un material"));
             return;
         }
@@ -574,12 +623,18 @@ public class ProductionView extends BorderPane {
             flash(AlertBanner.warn("Cantidad inválida"));
             return;
         }
+
+        // Reobtén el producto “fresco” desde inventario por si cambió stock/precio
+        Product p = inventory.findBySku(pSel.getSku()).orElse(pSel);
+
+        // Cantidad en unidad del producto según presentación elegida
         double q = toProductUnit(p, qUser);
         String human = humanQtyFor(p, q);
 
+        // Si ya estaba en la lista, acumula
         for (Insumo x : new ArrayList<>(insumos)) {
             if (x.prod.getSku().equalsIgnoreCase(p.getSku())) {
-                x.cantidadPorProducto += q;
+                x.cantidadPorProducto = x.cantidadPorProducto + q;
                 x.humanResumen = humanQtyFor(p, x.cantidadPorProducto);
                 renderInsumos();
                 recalc();
@@ -587,6 +642,8 @@ public class ProductionView extends BorderPane {
                 return;
             }
         }
+
+        // Nuevo insumo
         insumos.add(new Insumo(p, q, human));
         renderInsumos();
         recalc();
@@ -627,6 +684,10 @@ public class ProductionView extends BorderPane {
 
     private void updateDisponible() {
         Product p = material.getValue();
+        if (p != null) {
+            // reobtén del inventario por SKU para evitar caché viejo del ComboBox
+            p = inventory.findBySku(p.getSku()).orElse(p);
+        }
         double q = cantPorProducto.getValue();
         double qProdUnit = p == null ? 0.0 : toProductUnit(p, q);
         disponibleLbl.setText(p == null ? "—" : disponibleTexto(p, qProdUnit));
@@ -706,41 +767,99 @@ public class ProductionView extends BorderPane {
     }
 
     private void cargarRecetaPorNombre(String nombre, boolean autofill) {
-        RecipeFile rf = loadRecipeFile(nombre);
-        if (rf == null) {
-            flash(AlertBanner.warn("No se pudo cargar la receta"));
+        var opt = recipes.getByName(nombre);
+        if (opt.isEmpty()) {
+            flash(AlertBanner.warn("No se encontró la receta en recipes.json"));
             return;
         }
-        recetaActual = rf;
-        recetaBloqueada = true;
-        insumos.clear();
+        var rf = opt.get();
+
+        // Snapshot interno
+        recetaActual = new RecipeFile();
+        recetaActual.nombre = rf.nombre;
+        recetaActual.sku = rf.sku == null ? "" : rf.sku;
+        recetaActual.margen = rf.margen;
+        recetaActual.precioDirecto = rf.precioDirecto;
+        recetaActual.manoObraUnit = rf.manoObraUnit;
+
         if (autofill) {
+            // Rellena encabezado
             nombreFinal.setText(rf.nombre);
-            skuFinal.setText(safe(rf.sku));
-        }
-        for (RecipeItem it : rf.items) {
-            Product p = inventory.findBySku(it.getSku()).orElse(null);
-            if (p != null) {
-                double q = fromBaseToProductUnit(p, it.getCantidadBase());
-                insumos.add(new Insumo(p, q, humanQtyFor(p, q)));
+            skuFinal.setText(recetaActual.sku);
+            manoObraUnit.getValueFactory().setValue(rf.manoObraUnit <= 0 ? 0.0 : rf.manoObraUnit);
+
+            // Precio: usa uno u otro y limpia el contrario
+            if (rf.precioDirecto > 0) {
+                pmDirecto.setSelected(true);
+                precioDirecto.setText(String.format(java.util.Locale.US, "%.2f", rf.precioDirecto));
+                margen.getValueFactory().setValue(0.0);
+            } else {
+                pmMargen.setSelected(true);
+                margen.getValueFactory().setValue(rf.margen <= 0 ? 50.0 : rf.margen);
+                precioDirecto.clear();
+            }
+
+            // Marca visualmente la receta elegida
+            if (!Objects.equals(recetaSelect.getValue(), rf.nombre)) {
+                recetaSelect.getSelectionModel().select(rf.nombre);
             }
         }
+
+        // Materiales desde inventario “fresco”
+        insumos.clear();
+        for (RecipesStore.Item it : rf.items) {
+            inventory.findBySku(it.sku).ifPresent(p -> {
+                // cantidadBase viene en unidad base; conviértela a unidad del producto para la
+                // UI
+                double qPU = fromBaseToProductUnit(p, it.cantidadBase);
+                insumos.add(new Insumo(p, qPU, humanQtyFor(p, qPU)));
+            });
+        }
         renderInsumos();
+
+        // Bloquea edición de receta hasta que el usuario decida “Modificar receta”
+        recetaBloqueada = true;
         aplicarBloqueos();
+
         recalc();
     }
 
     private void refrescarListaRecetas() {
+        var nombres = new ArrayList<String>();
+        for (RecipesStore.Recipe r : recipes.list())
+            nombres.add(r.nombre);
+        Collections.sort(nombres, String.CASE_INSENSITIVE_ORDER);
+        recetaSelect.setItems(FXCollections.observableArrayList(nombres));
+    }
+
+    private RecipeFile snapshotReceta(String nombre, String sku) {
+        RecipeFile rf = new RecipeFile();
+        rf.nombre = nombre;
+        rf.sku = sku;
+        rf.margen = pmMargen.isSelected() ? margen.getValue() : 0.0;
+        rf.precioDirecto = pmDirecto.isSelected() ? parseD(precioDirecto.getText(), 0.0) : 0.0;
+        rf.manoObraUnit = manoObraUnit.getValue();
+        rf.items = new ArrayList<>();
+        for (Insumo in : insumos) {
+            double base = inventory.toBase(in.prod, in.cantidadPorProducto);
+            rf.items.add(new RecipeItem(
+                    in.prod.getSku(),
+                    "BASE", // o "" si prefieres
+                    round2(inventory.toBase(in.prod, in.cantidadPorProducto))));
+
+        }
+        return rf;
+    }
+
+    private void writeRecipeFile(RecipeFile rf) {
         try {
-            List<String> nombres = new ArrayList<>();
-            if (Files.exists(recetasDir()))
-                try (var s = Files.list(recetasDir())) {
-                    s.filter(p -> p.toString().endsWith(".json"))
-                            .forEach(p -> nombres.add(p.getFileName().toString().replace(".json", "")));
-                }
-            Collections.sort(nombres);
-            recetaSelect.setItems(FXCollections.observableArrayList(nombres));
-        } catch (Exception ignored) {
+            Files.createDirectories(recetasDir());
+            Path p = pathReceta(rf.nombre);
+            String json = gson.toJson(rf);
+            Files.writeString(p, json, StandardCharsets.UTF_8, StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (Exception e) {
+            flash(AlertBanner.warn("No se pudo guardar la receta"));
         }
     }
 
@@ -749,11 +868,13 @@ public class ProductionView extends BorderPane {
     private void recalc() {
         double costoMatUnit = 0.0;
         for (Insumo i : insumos)
-            costoMatUnit += i.prod.getPrecio() * i.cantidadPorProducto;
-        double costoUnit = costoMatUnit + manoObraUnit.getValue();
+            costoMatUnit += round2(i.prod.getPrecio() * i.cantidadPorProducto);
+        double costoUnit = round2(costoMatUnit + manoObraUnit.getValue());
         double precio = pmDirecto.isSelected()
                 ? parseD(precioDirecto.getText(), costoUnit)
-                : costoUnit * (1.0 + (margen.getValue() / 100.0));
+                : round2(costoUnit * (1.0 + (margen.getValue() / 100.0)));
+        precio = round2(precio);
+
         kCostoMat.setText(money(costoMatUnit));
         kCostoUnit.setText(money(costoUnit));
         kPrecioFinal.setText(money(precio));
@@ -768,7 +889,7 @@ public class ProductionView extends BorderPane {
     }
 
     private String money(double v) {
-        return String.format("$%,.2f", v);
+        return String.format(java.util.Locale.US, "$%,.2f", v);
     }
 
     private String fmt2(double v) {
@@ -905,7 +1026,65 @@ public class ProductionView extends BorderPane {
         return cand;
     }
 
-    /* Modelos internos */
+    /* ====== Watcher de archivos para refrescar catálogos/recetas ====== */
+    private void startFileWatch() {
+        try {
+            Path dataDir = Path.of("").toAbsolutePath().resolve("data");
+            Files.createDirectories(dataDir);
+            Files.createDirectories(recetasDir());
+
+            // Usa un thread daemon para no bloquear cierre.
+            var ex = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "pos-filewatch");
+                t.setDaemon(true);
+                return t;
+            });
+
+            ex.scheduleWithFixedDelay(() -> {
+                try {
+                    // Si cambió products.json -> refrescar materiales
+                    Path products = dataDir.resolve("products.json");
+                    // Si cambió lista de recetas (nuevo/actualizado) -> refrescar select
+                    // Implementación simple: escanea timestamps y refresca si cambia tamaño o
+                    // mtime.
+                    long key = (Files.exists(products) ? Files.getLastModifiedTime(products).toMillis() : 0)
+                            ^ directoryStamp(recetasDir());
+                    // cache estática en campo local del runnable
+                    stampCache = (stampCache == 0L) ? key : stampCache;
+                    if (key != stampCache) {
+                        stampCache = key;
+                        Platform.runLater(() -> {
+                            cargarCatalogo();
+                            refrescarListaRecetas();
+                            renderInsumos();
+                        });
+                    }
+                } catch (Exception ignored) {
+                }
+            }, 500, 700, TimeUnit.MILLISECONDS);
+
+        } catch (Exception ignored) {
+        }
+    }
+
+    private long stampCache = 0L;
+
+    private long directoryStamp(Path dir) {
+        try (var s = Files.list(dir)) {
+            return s.filter(Files::isRegularFile)
+                    .mapToLong(p -> {
+                        try {
+                            return Files.getLastModifiedTime(p).toMillis() ^ p.toString().hashCode();
+                        } catch (Exception e) {
+                            return p.toString().hashCode();
+                        }
+                    }).reduce(0L, (a, b) -> a ^ b);
+        } catch (Exception e) {
+            return 0L;
+        }
+    }
+
+    /* =================== Modelos =================== */
     private static class Insumo {
         final Product prod;
         double cantidadPorProducto;
