@@ -15,10 +15,10 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Autocomplete no intrusivo:
- * - Filtra al escribir sin tocar el editor.
- * - Solo acepta con TAB/ENTER o al seleccionar en popup.
- * - Permite borrar normalmente; SPACE NO acepta.
+ * Autocomplete no intrusivo para ComboBox editable.
+ * - Filtra al escribir sin modificar el editor.
+ * - Acepta sugerencia solo con TAB o con clic en la lista.
+ * - ENTER/SPACE no aceptan; Backspace/Delete no seleccionan nada.
  */
 public class AutoCompleteCombo<T> {
     private final ComboBox<T> combo;
@@ -40,26 +40,35 @@ public class AutoCompleteCombo<T> {
 
         final TextField ed = combo.getEditor();
 
-        ed.textProperty().addListener((o, a, now) -> {
+        // Filtrar sin tocar el texto
+        ed.textProperty().addListener((obs, old, now) -> {
             if (updating)
                 return;
             filter(now);
         });
 
+        // Teclas: solo TAB acepta. ENTER/SPACE se ignoran y se consumen.
         ed.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
-            if (e.getCode() == KeyCode.TAB || e.getCode() == KeyCode.ENTER) {
+            if (e.getCode() == KeyCode.TAB) {
                 T first = firstStartsWith(ed.getText());
                 if (first != null) {
                     accept(first);
                     e.consume();
                 }
-            } else {
-                combo.getSelectionModel().clearSelection();
-                if (e.getCode() == KeyCode.DOWN && !combo.isShowing())
-                    combo.show();
+                return;
             }
+            if (e.getCode() == KeyCode.ENTER || e.getCode() == KeyCode.SPACE) {
+                // Evitar que ComboBox acepte/seleccione el primer ítem
+                e.consume();
+                return;
+            }
+            // Cualquier edición limpia selección para permitir borrar/escribir
+            combo.getSelectionModel().clearSelection();
+            if (e.getCode() == KeyCode.DOWN && !combo.isShowing())
+                combo.show();
         });
 
+        // Selección con el popup
         combo.getSelectionModel().selectedItemProperty().addListener((o, a, v) -> {
             if (updating || v == null)
                 return;
@@ -94,9 +103,11 @@ public class AutoCompleteCombo<T> {
         for (T t : master)
             if (norm(textOf(t)).startsWith(p))
                 filtered.add(t);
+
         updating = true;
         combo.setItems(filtered);
         updating = false;
+
         if (!filtered.isEmpty()) {
             if (!combo.isShowing())
                 combo.show();
@@ -111,6 +122,7 @@ public class AutoCompleteCombo<T> {
         combo.getEditor().positionCaret(s.length());
         combo.getEditor().deselect();
         combo.getSelectionModel().select(value);
+        // Catálogo completo otra vez para no “anclar” la búsqueda
         combo.setItems(master);
         updating = false;
         Platform.runLater(combo::hide);

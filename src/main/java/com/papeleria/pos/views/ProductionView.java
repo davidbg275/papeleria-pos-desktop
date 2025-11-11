@@ -25,17 +25,19 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.text.Normalizer;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
 
 /**
- * Armado de productos con:
- * - Modo Nuevo/Reproducir.
- * - Nombre sugerido solo con “fabricables” (recetas + categoría Producción).
- * - Prevención de duplicados no-fabricables.
- * - SKU auto LL-NNN.
- * - UX clara de materiales, disponibles y precio.
+ * Vista de armado de productos.
+ * - Campo Nombre sugiere solo “fabricables”: recetas guardadas + productos
+ * categoría Producción.
+ * - Si el nombre ya es una receta, cambia a “Reproducir receta”
+ * automáticamente.
+ * - Evita crear nuevo si existe en inventario con otra categoría.
+ * - Autocomplete no acepta con ENTER ni SPACE (solo TAB/clic).
+ * - SKU automático LL-NNN.
+ * - Conversión correcta de presentaciones (paquete/caja/rollo/metro/cm).
  */
 public class ProductionView extends BorderPane {
 
@@ -45,21 +47,19 @@ public class ProductionView extends BorderPane {
     private final InventoryService inventory;
     private final EventBus bus;
 
-    // Estado receta cargada
+    // Receta cargada si se está reproduciendo
     private RecipeFile recetaActual = null;
 
-    // Header y banners
+    // Contenedores
     private VBox header;
 
-    // Modo
+    // Modo de trabajo
     private final ToggleGroup modo = new ToggleGroup();
     private final RadioButton rbNuevo = new RadioButton("Crear NUEVO producto");
     private final RadioButton rbRepro = new RadioButton("Reproducir receta");
-
-    // Recetas
     private final ComboBox<String> recetaSelect = new ComboBox<>();
 
-    // Producto final
+    // Datos del producto final
     private final TextField nombreFinal = new TextField();
     private final TextField skuFinal = new TextField();
     private final Button btnRegenerarSku = new Button("↻");
@@ -103,7 +103,7 @@ public class ProductionView extends BorderPane {
         t.getStyleClass().add("h1");
         Label s = new Label("Crea productos nuevos o reproduce tus recetas");
         s.getStyleClass().add("subtle");
-        header = new VBox(6, t, s, stepper());
+        header = new VBox(6, t, s);
         setTop(header);
 
         VBox page = new VBox(12,
@@ -128,6 +128,7 @@ public class ProductionView extends BorderPane {
         precioDirecto.textProperty().addListener((o, a, v) -> recalc());
         pmMargen.setOnAction(e -> recalc());
         pmDirecto.setOnAction(e -> recalc());
+
         bus.subscribe(EventBus.Topic.INVENTORY_CHANGED, ev -> javafx.application.Platform.runLater(this::recalc));
 
         cargarCatalogo();
@@ -137,38 +138,19 @@ public class ProductionView extends BorderPane {
         recalc();
     }
 
-    /* ======= UI ======= */
-    private HBox stepper() {
-        return new HBox(20, step("1", "Elegir / cargar", true), sep(), step("2", "Materiales", false), sep(),
-                step("3", "Fabricar", false));
-    }
-
-    private Region sep() {
-        Region r = new Region();
-        r.setMinWidth(18);
-        r.getStyleClass().add("step-sep");
-        return r;
-    }
-
-    private VBox step(String n, String txt, boolean act) {
-        Label a = new Label(n);
-        a.getStyleClass().addAll("step-num");
-        if (act)
-            a.getStyleClass().add("active");
-        Label b = new Label(txt);
-        b.getStyleClass().add("step-text");
-        return new VBox(2, a, b);
-    }
+    /* ===================== UI ===================== */
 
     private VBox cardModo() {
         rbNuevo.setToggleGroup(modo);
         rbRepro.setToggleGroup(modo);
+
         recetaSelect.setPromptText("Selecciona una receta");
         recetaSelect.setDisable(true);
         recetaSelect.valueProperty().addListener((o, a, v) -> {
             if (rbRepro.isSelected() && v != null)
                 cargarRecetaPorNombre(v, true);
         });
+
         modo.selectedToggleProperty().addListener((o, a, v) -> aplicarModo());
 
         GridPane g = new GridPane();
@@ -181,7 +163,7 @@ public class ProductionView extends BorderPane {
     }
 
     private VBox cardProducto() {
-        // Sugerencias SOLO con fabricables (recetas + categoría Producción)
+        // Sugerencias SOLO con “fabricables”
         ComboBox<String> nombreCombo = new ComboBox<>(FXCollections.observableArrayList(listaFabricables()));
         nombreCombo.setEditable(true);
         new AutoCompleteCombo<>(cast(nombreCombo), nombreCombo.getItems(), s -> s);
@@ -212,8 +194,7 @@ public class ProductionView extends BorderPane {
         numeroLotes.setEditable(true);
         g.addRow(0, new Label("Cantidad por lote"), cantidadPorLote);
         g.addRow(1, new Label("Número de lotes"), numeroLotes);
-        VBox wrap = new VBox(6, g, right(new Label("Total a fabricar: "), totalAFabricar));
-        return card("Lotes y cantidades", wrap);
+        return card("Lotes y cantidades", g);
     }
 
     private VBox cardMateriales() {
@@ -275,8 +256,7 @@ public class ProductionView extends BorderPane {
         cantPorProducto.valueProperty().addListener((o, a, v) -> updateDisponible());
 
         listaInsumos.setPrefWrapLength(520);
-        VBox body = new VBox(10, fila, right(new Region(), agregar), listaInsumos);
-        return card("Materiales", body);
+        return card("Materiales", new VBox(10, fila, new HBox(new Region(), agregar), listaInsumos));
     }
 
     private VBox cardPrecio() {
@@ -296,18 +276,17 @@ public class ProductionView extends BorderPane {
         precioDirecto.setDisable(true);
         pmDirecto.selectedProperty().addListener((o, a, v) -> precioDirecto.setDisable(!v));
 
-        HBox selector = new HBox(12, pmMargen, new Label("%"), margen, new Region(), pmDirecto, new Label("$"),
-                precioDirecto);
-        HBox.setHgrow(selector.getChildren().get(3), Priority.ALWAYS);
-
         Button fabricar = new Button();
         fabricar.getStyleClass().add("success");
         fabricar.textProperty().bind(Bindings.createStringBinding(
-                () -> (recetaActual != null ? "Fabricar (receta)" : "Fabricar") + " " + totalAFabricar.getText(),
-                totalAFabricar.textProperty()));
+                () -> (recetaActual != null ? "Fabricar (receta)" : "Fabricar") + " "
+                        + Math.max(1, cantidadPorLote.getValue() * numeroLotes.getValue()),
+                cantidadPorLote.valueProperty(), numeroLotes.valueProperty(), kPrecioFinal.textProperty()));
         fabricar.setOnAction(e -> fabricarAccion());
 
-        return card("Precio y fabricación", new VBox(12, new HBox(12, k1, k2, k3), selector, fabricar));
+        return card("Precio y fabricación", new VBox(12, new HBox(12, k1, k2, k3),
+                new HBox(12, pmMargen, new Label("%"), margen, new Region(), pmDirecto, new Label("$"), precioDirecto),
+                fabricar));
     }
 
     private VBox card(String t, Region content) {
@@ -317,14 +296,6 @@ public class ProductionView extends BorderPane {
         v.getStyleClass().add("card");
         v.setPadding(new Insets(12));
         return v;
-    }
-
-    private HBox right(javafx.scene.Node left, javafx.scene.Node right) {
-        Region s = new Region();
-        HBox.setHgrow(s, Priority.ALWAYS);
-        HBox h = new HBox(8, left, s, right);
-        h.setAlignment(Pos.CENTER_LEFT);
-        return h;
     }
 
     private VBox kpi(String v, String s) {
@@ -353,7 +324,8 @@ public class ProductionView extends BorderPane {
         return card;
     }
 
-    /* ======= LÓGICA ======= */
+    /* ===================== LÓGICA ===================== */
+
     private void aplicarModo() {
         boolean nuevo = rbNuevo.isSelected();
         recetaSelect.setDisable(nuevo);
@@ -363,8 +335,6 @@ public class ProductionView extends BorderPane {
             recetaActual = null;
             if (skuFinal.getText() == null || skuFinal.getText().isBlank())
                 skuFinal.setText(genSkuFromName(nombreFinal.getText()));
-        } else if (recetaSelect.getItems().isEmpty()) {
-            flash(AlertBanner.warn("No tienes recetas guardadas aún"));
         }
     }
 
@@ -373,210 +343,27 @@ public class ProductionView extends BorderPane {
             return;
         String nombre = safe(nombreFinal.getText()).trim();
         skuFinal.setText(genSkuFromName(nombre));
-
         if (nombre.isEmpty())
             return;
 
-        // Si el nombre ya es receta → sugiere reproducir
+        // Si el nombre ya tiene receta → cambiar a "Reproducir" automáticamente
         if (Files.exists(pathReceta(nombre))) {
-            if (confirm("Ya existe receta con ese nombre. ¿Cambiar a 'Reproducir'?", "Reproducir", "Seguir") == 0) {
-                rbRepro.setSelected(true);
-                aplicarModo();
-                recetaSelect.getSelectionModel().select(nombre);
-                cargarRecetaPorNombre(nombre, true);
-            }
+            rbRepro.setSelected(true);
+            aplicarModo();
+            recetaSelect.getSelectionModel().select(nombre);
+            cargarRecetaPorNombre(nombre, true);
+            flash(AlertBanner.info("Cambié a 'Reproducir receta' porque ya existe la receta: " + nombre));
             return;
         }
 
-        // Si existe producto en inventario con ese nombre PERO no es de Producción →
-        // bloquear
+        // Si existe en inventario con otra categoría → bloquear
         boolean existeNoProd = inventory.search(nombre).stream()
                 .anyMatch(p -> p.getNombre() != null && p.getNombre().equalsIgnoreCase(nombre)
                         && !"Producción".equalsIgnoreCase(safe(p.getCategoria())));
         if (existeNoProd) {
             flash(AlertBanner.warn(
-                    "Ya existe un producto en inventario con ese nombre. No se puede crear como nuevo. Usa otro nombre o crea solo la receta."));
+                    "Ya hay un producto en inventario con ese nombre. No puedes crear uno nuevo con el mismo nombre."));
         }
-    }
-
-    private void cargarCatalogo() {
-        material.setItems(FXCollections.observableArrayList(inventory.list()));
-    }
-
-    private void refrescarListaRecetas() {
-        try {
-            List<String> nombres = new ArrayList<>();
-            if (Files.exists(recetasDir()))
-                try (var s = Files.list(recetasDir())) {
-                    s.filter(p -> p.toString().endsWith(".json"))
-                            .forEach(p -> nombres.add(p.getFileName().toString().replace(".json", "")));
-                }
-            Collections.sort(nombres);
-            recetaSelect.setItems(FXCollections.observableArrayList(nombres));
-        } catch (Exception ignored) {
-        }
-    }
-
-    private List<String> listaFabricables() {
-        Set<String> out = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        // recetas
-        try {
-            if (Files.exists(recetasDir()))
-                try (var s = Files.list(recetasDir())) {
-                    s.filter(p -> p.toString().endsWith(".json"))
-                            .forEach(p -> out.add(p.getFileName().toString().replace(".json", "")));
-                }
-        } catch (Exception ignored) {
-        }
-        // productos de Producción
-        for (Product p : inventory.list())
-            if ("Producción".equalsIgnoreCase(safe(p.getCategoria())) && p.getNombre() != null)
-                out.add(p.getNombre());
-        return new ArrayList<>(out);
-    }
-
-    private void cargarRecetaPorNombre(String nombre, boolean autofill) {
-        RecipeFile rf = loadRecipeFile(nombre);
-        if (rf == null) {
-            flash(AlertBanner.warn("No se pudo cargar la receta"));
-            return;
-        }
-        recetaActual = rf;
-        insumos.clear();
-
-        if (autofill) {
-            nombreFinal.setText(rf.nombre);
-            skuFinal.setText(safe(rf.sku));
-        }
-
-        for (RecipeItem it : rf.items) {
-            Product p = inventory.findBySku(it.getSku()).orElse(null);
-            if (p != null) {
-                double q = fromBaseToProductUnit(p, it.getCantidadBase());
-                insumos.add(new Insumo(p, q, humanQtyFor(p, q)));
-            }
-        }
-        renderInsumos();
-        if (rf.manoObraUnit > 0)
-            manoObraUnit.getValueFactory().setValue(rf.manoObraUnit);
-        if (rf.precioDirecto > 0) {
-            pmDirecto.setSelected(true);
-            precioDirecto.setText(fmt2(rf.precioDirecto));
-        } else {
-            pmMargen.setSelected(true);
-            margen.getValueFactory().setValue(rf.margen <= 0 ? 50.0 : rf.margen);
-        }
-        recalc();
-    }
-
-    private void agregarInsumo() {
-        Product p = material.getValue();
-        double qUser = cantPorProducto.getValue();
-        if (p == null) {
-            flash(AlertBanner.warn("Selecciona un material"));
-            return;
-        }
-        if (qUser <= 0) {
-            flash(AlertBanner.warn("Cantidad inválida"));
-            return;
-        }
-
-        double q = toProductUnit(p, qUser);
-        String human = humanQtyFor(p, q);
-
-        for (Insumo x : new ArrayList<>(insumos)) {
-            if (x.prod.getSku().equalsIgnoreCase(p.getSku())) {
-                x.cantidadPorProducto += q;
-                x.humanResumen = humanQtyFor(p, x.cantidadPorProducto);
-                renderInsumos();
-                recalc();
-                limpiarEditor();
-                return;
-            }
-        }
-        insumos.add(new Insumo(p, q, human));
-        renderInsumos();
-        recalc();
-        limpiarEditor();
-    }
-
-    private void limpiarEditor() {
-        material.getSelectionModel().clearSelection();
-        material.getEditor().clear();
-        presentacion.getItems().setAll("Unidad");
-        presentacion.getSelectionModel().selectFirst();
-        cantPorProducto.getValueFactory().setValue(1.0);
-        updateDisponible();
-    }
-
-    private void renderInsumos() {
-        listaInsumos.getChildren().clear();
-        for (Insumo i : insumos) {
-            Label name = new Label(i.prod.getNombre());
-            Label qty = new Label("Agregado: " + i.humanResumen);
-            Label disp = new Label(disponibleTexto(i.prod, i.cantidadPorProducto));
-            disp.getStyleClass().add(okClase(i));
-            Button del = new Button("🗑");
-            del.getStyleClass().add("danger");
-            HBox chip = new HBox(10, name, qty, new Region(), disp, del);
-            HBox.setHgrow(chip.getChildren().get(2), Priority.ALWAYS);
-            chip.getStyleClass().addAll("chip", "card");
-            chip.setAlignment(Pos.CENTER_LEFT);
-            del.setOnAction(e -> {
-                insumos.remove(i);
-                renderInsumos();
-                recalc();
-            });
-            listaInsumos.getChildren().add(chip);
-        }
-    }
-
-    private void updateDisponible() {
-        Product p = material.getValue();
-        double q = cantPorProducto.getValue();
-        double qProdUnit = p == null ? 0.0 : toProductUnit(p, q);
-        disponibleLbl.setText(p == null ? "—" : disponibleTexto(p, qProdUnit));
-    }
-
-    private String disponibleTexto(Product p, double qPorProducto_enUnidadDelProducto) {
-        double reqBase = inventory.toBase(p,
-                qPorProducto_enUnidadDelProducto * numeroLotes.getValue() * cantidadPorLote.getValue());
-        double stockBase = inventory.toBase(p,
-                inventory.findBySku(p.getSku()).map(Product::getStock).orElse(p.getStock()));
-        boolean ok = stockBase + 1e-9 >= reqBase;
-        double stockProd = inventory.findBySku(p.getSku()).map(Product::getStock).orElse(p.getStock());
-        String prodU = unidadLabel(p);
-        return fmt2(stockBase) + " " + baseLabel(p) + " (" + fmt2(stockProd) + " " + prodU.toLowerCase() + "s)  "
-                + (ok ? "✔" : "✖");
-    }
-
-    private String okClase(Insumo i) {
-        double reqBase = inventory.toBase(i.prod,
-                i.cantidadPorProducto * numeroLotes.getValue() * cantidadPorLote.getValue());
-        double stockBase = inventory.toBase(i.prod,
-                inventory.findBySku(i.prod.getSku()).map(Product::getStock).orElse(i.prod.getStock()));
-        return (stockBase + 1e-9 >= reqBase) ? "ok-pill" : "warn-pill";
-    }
-
-    private void recalc() {
-        int total = Math.max(1, cantidadPorLote.getValue()) * Math.max(1, numeroLotes.getValue());
-        totalAFabricar.setText(String.valueOf(total));
-        double costoMatUnit = 0.0;
-        for (Insumo i : insumos)
-            costoMatUnit += i.prod.getPrecio() * i.cantidadPorProducto;
-        double costoUnit = costoMatUnit + manoObraUnit.getValue();
-
-        double precio;
-        if (pmDirecto.isSelected()) {
-            double dir = parseD(precioDirecto.getText(), -1);
-            precio = dir > 0 ? dir : costoUnit;
-        } else {
-            precio = costoUnit * (1.0 + (margen.getValue() / 100.0));
-        }
-
-        kCostoMat.setText(money(costoMatUnit));
-        kCostoUnit.setText(money(costoUnit));
-        kPrecioFinal.setText(money(precio));
     }
 
     private void fabricarAccion() {
@@ -598,19 +385,19 @@ public class ProductionView extends BorderPane {
             return;
         }
 
-        // Bloqueo de nombre no-fabricable
+        // En modo NUEVO, si el nombre ya es receta, bloquear.
+        if (rbNuevo.isSelected() && Files.exists(pathReceta(nombre))) {
+            flash(AlertBanner.warn("Ya existe una receta con ese nombre. Usa 'Reproducir receta'."));
+            return;
+        }
+
+        // Si existe en inventario con otra categoría -> bloquear.
         boolean existeNoProd = inventory.search(nombre).stream()
                 .anyMatch(p -> p.getNombre() != null && p.getNombre().equalsIgnoreCase(nombre)
                         && !"Producción".equalsIgnoreCase(safe(p.getCategoria())));
         if (existeNoProd) {
-            flash(AlertBanner.warn("Ese nombre pertenece a un producto de inventario. No se puede crear como nuevo."));
+            flash(AlertBanner.warn("Ese nombre pertenece a un producto de inventario. Usa otro nombre."));
             return;
-        }
-
-        // Si hay receta cargada: confirmar
-        if (recetaActual != null) {
-            if (confirm("Usar receta tal cual para fabricar ahora?", "Usar receta", "Modificar") == 1)
-                return;
         }
 
         List<ProductionService.InsumoReq> reqs = new ArrayList<>();
@@ -641,13 +428,117 @@ public class ProductionView extends BorderPane {
         }
 
         flash(AlertBanner.success("Producción registrada"));
-
         if (rbNuevo.isSelected())
             limpiarNuevo();
-        else
-            renderInsumos();
         recalc();
         refrescarListaRecetas();
+    }
+
+    /* ===================== Materiales ===================== */
+
+    private void cargarCatalogo() {
+        material.setItems(FXCollections.observableArrayList(inventory.list()));
+    }
+
+    private void agregarInsumo() {
+        Product p = material.getValue();
+        double qUser = cantPorProducto.getValue();
+        if (p == null) {
+            flash(AlertBanner.warn("Selecciona un material"));
+            return;
+        }
+        if (qUser <= 0) {
+            flash(AlertBanner.warn("Cantidad inválida"));
+            return;
+        }
+        double q = toProductUnit(p, qUser);
+        String human = humanQtyFor(p, q);
+
+        for (Insumo x : new ArrayList<>(insumos)) {
+            if (x.prod.getSku().equalsIgnoreCase(p.getSku())) {
+                x.cantidadPorProducto += q;
+                x.humanResumen = humanQtyFor(p, x.cantidadPorProducto);
+                renderInsumos();
+                recalc();
+                limpiarEditor();
+                return;
+            }
+        }
+        insumos.add(new Insumo(p, q, human));
+        renderInsumos();
+        recalc();
+        limpiarEditor();
+    }
+
+    private void renderInsumos() {
+        listaInsumos.getChildren().clear();
+        for (Insumo i : insumos) {
+            Label name = new Label(i.prod.getNombre());
+            Label qty = new Label("Agregado: " + i.humanResumen);
+            Label disp = new Label(disponibleTexto(i.prod, i.cantidadPorProducto));
+            disp.getStyleClass().add(okClase(i));
+            Button del = new Button("🗑");
+            del.getStyleClass().add("danger");
+            HBox chip = new HBox(10, name, qty, new Region(), disp, del);
+            HBox.setHgrow(chip.getChildren().get(2), Priority.ALWAYS);
+            chip.getStyleClass().addAll("chip", "card");
+            chip.setAlignment(Pos.CENTER_LEFT);
+            del.setOnAction(e -> {
+                insumos.remove(i);
+                renderInsumos();
+                recalc();
+            });
+            listaInsumos.getChildren().add(chip);
+        }
+    }
+
+    private void limpiarEditor() {
+        material.getSelectionModel().clearSelection();
+        material.getEditor().clear();
+        presentacion.getItems().setAll("Unidad");
+        presentacion.getSelectionModel().selectFirst();
+        cantPorProducto.getValueFactory().setValue(1.0);
+        updateDisponible();
+    }
+
+    private void updateDisponible() {
+        Product p = material.getValue();
+        double q = cantPorProducto.getValue();
+        double qProdUnit = p == null ? 0.0 : toProductUnit(p, q);
+        disponibleLbl.setText(p == null ? "—" : disponibleTexto(p, qProdUnit));
+    }
+
+    private String disponibleTexto(Product p, double qPU) {
+        double reqBase = inventory.toBase(p, qPU * numeroLotes.getValue() * cantidadPorLote.getValue());
+        double stockBase = inventory.toBase(p,
+                inventory.findBySku(p.getSku()).map(Product::getStock).orElse(p.getStock()));
+        boolean ok = stockBase + 1e-9 >= reqBase;
+        double stockProd = inventory.findBySku(p.getSku()).map(Product::getStock).orElse(p.getStock());
+        return fmt2(stockBase) + " " + baseLabel(p) + " (" + fmt2(stockProd) + " " + unidadLabel(p).toLowerCase()
+                + "s)  " + (ok ? "✔" : "✖");
+    }
+
+    private String okClase(Insumo i) {
+        double reqBase = inventory.toBase(i.prod,
+                i.cantidadPorProducto * numeroLotes.getValue() * cantidadPorLote.getValue());
+        double stockBase = inventory.toBase(i.prod,
+                inventory.findBySku(i.prod.getSku()).map(Product::getStock).orElse(i.prod.getStock()));
+        return (stockBase + 1e-9 >= reqBase) ? "ok-pill" : "warn-pill";
+    }
+
+    /* ===================== Cálculos y helpers ===================== */
+
+    private void recalc() {
+        double costoMatUnit = 0.0;
+        for (Insumo i : insumos)
+            costoMatUnit += i.prod.getPrecio() * i.cantidadPorProducto;
+        double costoUnit = costoMatUnit + manoObraUnit.getValue();
+        double precio = pmDirecto.isSelected()
+                ? parseD(precioDirecto.getText(), costoUnit)
+                : costoUnit * (1.0 + (margen.getValue() / 100.0));
+        kCostoMat.setText(money(costoMatUnit));
+        kCostoUnit.setText(money(costoUnit));
+        kPrecioFinal.setText(money(precio));
     }
 
     private void limpiarNuevo() {
@@ -664,32 +555,20 @@ public class ProductionView extends BorderPane {
         renderInsumos();
     }
 
-    /* ======= Conversión / textos ======= */
-    private double toProductUnit(Product p, double cantSegunPres) {
+    private double toProductUnit(Product p, double cant) {
         String u = lc(p.getUnidad());
         String pres = presentacion.getValue() == null ? "" : presentacion.getValue();
         double c = Math.max(0.0, p.getContenido());
-        switch (pres) {
-            case "Paquete", "Caja", "Rollo", "Unidad":
-                return cantSegunPres;
-            case "Pieza", "Hoja":
-                return c > 0 ? cantSegunPres / c : cantSegunPres;
-            case "Metro":
-                if (u.equals("rollo") && c > 0)
-                    return cantSegunPres / c;
-                if (u.equals("m") || u.equals("metro") || u.equals("metros"))
-                    return cantSegunPres;
-                return cantSegunPres;
-            case "Centímetro":
-                double m = cantSegunPres / 100.0;
-                if (u.equals("rollo") && c > 0)
-                    return m / c;
-                if (u.equals("m") || u.equals("metro") || u.equals("metros"))
-                    return m;
-                return m;
-            default:
-                return cantSegunPres;
-        }
+        return switch (pres) {
+            case "Paquete", "Caja", "Rollo", "Unidad" -> cant;
+            case "Pieza", "Hoja" -> c > 0 ? cant / c : cant;
+            case "Metro" -> (u.equals("rollo") && c > 0) ? cant / c : cant;
+            case "Centímetro" -> {
+                double m = cant / 100.0;
+                yield (u.equals("rollo") && c > 0) ? m / c : m;
+            }
+            default -> cant;
+        };
     }
 
     private double fromBaseToProductUnit(Product p, double base) {
@@ -712,8 +591,7 @@ public class ProductionView extends BorderPane {
     }
 
     private String nombreMenor(Product p) {
-        String n = lc(p.getNombre());
-        return n.contains("hoja") ? "Hoja" : "Pieza";
+        return lc(p.getNombre()).contains("hoja") ? "Hoja" : "Pieza";
     }
 
     private String baseLabel(Product p) {
@@ -726,60 +604,8 @@ public class ProductionView extends BorderPane {
     }
 
     private String humanQtyFor(Product p, double qtyPU) {
-        String prodU = unidadLabel(p);
-        String baseU = baseLabel(p);
-        double base = inventory.toBase(p, qtyPU);
-        return fmt2(qtyPU) + " " + prodU.toLowerCase() + (qtyPU == 1 ? "" : "s") + " (" + fmt2(base) + " " + baseU
-                + ")";
-    }
-
-    /* ======= Recetas ======= */
-    private Path recetasDir() {
-        return Path.of("").toAbsolutePath().resolve("data").resolve("recetas");
-    }
-
-    private Path pathReceta(String nombre) {
-        return recetasDir().resolve(slug(nombre) + ".json");
-    }
-
-    private RecipeFile loadRecipeFile(String nombre) {
-        try {
-            Path p = pathReceta(nombre);
-            if (!Files.exists(p))
-                return null;
-            String s = Files.readString(p, StandardCharsets.UTF_8).trim();
-            if (s.startsWith("[")) {
-                Type T = new TypeToken<List<RecipeItem>>() {
-                }.getType();
-                List<RecipeItem> items = gson.fromJson(s, T);
-                RecipeFile rf = new RecipeFile();
-                rf.nombre = nombre;
-                rf.sku = "";
-                rf.margen = 50.0;
-                rf.manoObraUnit = 0.0;
-                rf.precioDirecto = 0.0;
-                rf.items = items == null ? new ArrayList<>() : items;
-                return rf;
-            } else
-                return gson.fromJson(s, RecipeFile.class);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    /* ======= Util ======= */
-    private void flash(AlertBanner b) {
-        header.getChildren().removeIf(n -> n instanceof AlertBanner);
-        header.getChildren().add(0, b);
-        PauseTransition t = new PauseTransition(Duration.seconds(2.5));
-        t.setOnFinished(e -> header.getChildren().remove(b));
-        t.play();
-    }
-
-    private int confirm(String msg, String ok, String cancel) {
-        Alert a = new Alert(Alert.AlertType.CONFIRMATION, msg, new ButtonType(ok, ButtonBar.ButtonData.OK_DONE),
-                new ButtonType(cancel, ButtonBar.ButtonData.CANCEL_CLOSE));
-        return a.showAndWait().filter(bt -> bt.getButtonData() == ButtonBar.ButtonData.OK_DONE).isPresent() ? 0 : 1;
+        return fmt2(qtyPU) + " " + unidadLabel(p).toLowerCase() + (qtyPU == 1 ? "" : "s") + " ("
+                + fmt2(inventory.toBase(p, qtyPU)) + " " + baseLabel(p) + ")";
     }
 
     private String money(double v) {
@@ -823,6 +649,112 @@ public class ProductionView extends BorderPane {
         return (ComboBox<T>) cb;
     }
 
+    /* ===================== Recetas ===================== */
+
+    private Path recetasDir() {
+        return Path.of("").toAbsolutePath().resolve("data").resolve("recetas");
+    }
+
+    private Path pathReceta(String nombre) {
+        return recetasDir().resolve(slug(nombre) + ".json");
+    }
+
+    private List<String> listaFabricables() {
+        Set<String> out = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+
+        // Recetas guardadas
+        try {
+            Path dir = recetasDir();
+            if (Files.exists(dir)) {
+                try (var s = Files.list(dir)) {
+                    s.filter(p -> p.toString().endsWith(".json"))
+                            .forEach(p -> out.add(p.getFileName().toString().replace(".json", "")));
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        // Productos categoría Producción
+        for (Product p : inventory.list()) {
+            String cat = safe(p.getCategoria());
+            if ("Producción".equalsIgnoreCase(cat) && p.getNombre() != null)
+                out.add(p.getNombre());
+        }
+        return new ArrayList<>(out);
+    }
+
+    private RecipeFile loadRecipeFile(String nombre) {
+        try {
+            Path p = pathReceta(nombre);
+            if (!Files.exists(p))
+                return null;
+            String s = Files.readString(p, StandardCharsets.UTF_8).trim();
+            if (s.startsWith("[")) {
+                Type T = new TypeToken<List<RecipeItem>>() {
+                }.getType();
+                List<RecipeItem> items = gson.fromJson(s, T);
+                RecipeFile rf = new RecipeFile();
+                rf.nombre = nombre;
+                rf.sku = "";
+                rf.margen = 50.0;
+                rf.manoObraUnit = 0.0;
+                rf.precioDirecto = 0.0;
+                rf.items = items == null ? new ArrayList<>() : items;
+                return rf;
+            } else
+                return gson.fromJson(s, RecipeFile.class);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private void cargarRecetaPorNombre(String nombre, boolean autofill) {
+        RecipeFile rf = loadRecipeFile(nombre);
+        if (rf == null) {
+            flash(AlertBanner.warn("No se pudo cargar la receta"));
+            return;
+        }
+        recetaActual = rf;
+        insumos.clear();
+        if (autofill) {
+            nombreFinal.setText(rf.nombre);
+            skuFinal.setText(safe(rf.sku));
+        }
+        for (RecipeItem it : rf.items) {
+            Product p = inventory.findBySku(it.getSku()).orElse(null);
+            if (p != null) {
+                double q = fromBaseToProductUnit(p, it.getCantidadBase());
+                insumos.add(new Insumo(p, q, humanQtyFor(p, q)));
+            }
+        }
+        renderInsumos();
+        recalc();
+    }
+
+    private void refrescarListaRecetas() {
+        try {
+            List<String> nombres = new ArrayList<>();
+            if (Files.exists(recetasDir()))
+                try (var s = Files.list(recetasDir())) {
+                    s.filter(p -> p.toString().endsWith(".json"))
+                            .forEach(p -> nombres.add(p.getFileName().toString().replace(".json", "")));
+                }
+            Collections.sort(nombres);
+            recetaSelect.setItems(FXCollections.observableArrayList(nombres));
+        } catch (Exception ignored) {
+        }
+    }
+
+    /* ===================== Utilidades UI ===================== */
+
+    private void flash(AlertBanner b) {
+        header.getChildren().removeIf(n -> n instanceof AlertBanner);
+        header.getChildren().add(0, b);
+        PauseTransition t = new PauseTransition(Duration.seconds(2.2));
+        t.setOnFinished(e -> header.getChildren().remove(b));
+        t.play();
+    }
+
     private String slug(String s) {
         String n = Normalizer.normalize(s == null ? "" : s, Normalizer.Form.NFD)
                 .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
@@ -835,7 +767,9 @@ public class ProductionView extends BorderPane {
     // SKU LL-NNN
     private String genSkuFromName(String name) {
         String base = Normalizer.normalize(name == null ? "" : name, Normalizer.Form.NFD)
-                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "").replaceAll("[^A-Za-z0-9\\s-]", " ").trim();
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+                .replaceAll("[^A-Za-z0-9\\s-]", " ")
+                .trim();
         String first = "PF";
         for (String tok : base.split("\\s+"))
             if (tok.matches(".*[A-Za-z].*")) {
@@ -864,7 +798,8 @@ public class ProductionView extends BorderPane {
         return cand;
     }
 
-    /* ======= Modelos internos ======= */
+    /* ===================== Modelos internos ===================== */
+
     private static class Insumo {
         final Product prod;
         double cantidadPorProducto;
