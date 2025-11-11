@@ -15,41 +15,37 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Autocomplete NO intrusivo para ComboBox editable.
- * - Filtra mientras escribes. No reescribe el texto ni mueve el caret.
- * - Acepta sugerencia solo con TAB/ENTER o seleccionando en el popup.
- * - Permite borrar normalmente (Backspace/Delete) sin re-autocompletar.
- * - Mantiene items completos (no bloquea edición).
+ * Autocomplete no intrusivo:
+ * - Filtra al escribir sin tocar el editor.
+ * - Solo acepta con TAB/ENTER o al seleccionar en popup.
+ * - Permite borrar normalmente; SPACE NO acepta.
  */
 public class AutoCompleteCombo<T> {
-
     private final ComboBox<T> combo;
     private final Function<T, String> toText;
     private final ObservableList<T> master;
-    private boolean updating = false; // evita recursión
+    private boolean updating = false;
 
     public AutoCompleteCombo(ComboBox<T> combo, List<T> items, Function<T, String> toText) {
         this.combo = combo;
-        this.toText = toText;
         this.master = FXCollections.observableArrayList(items);
+        this.toText = toText;
         init();
     }
 
     private void init() {
         combo.setEditable(true);
         combo.setItems(master);
-
         ensureEditorLTR();
+
         final TextField ed = combo.getEditor();
 
-        // Filtrar mientras escribe (no tocar el texto del editor)
-        ed.textProperty().addListener((obs, old, now) -> {
+        ed.textProperty().addListener((o, a, now) -> {
             if (updating)
                 return;
             filter(now);
         });
 
-        // Teclas: aceptar con TAB/ENTER; limpiar selección en cualquier edición
         ed.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
             if (e.getCode() == KeyCode.TAB || e.getCode() == KeyCode.ENTER) {
                 T first = firstStartsWith(ed.getText());
@@ -58,22 +54,14 @@ public class AutoCompleteCombo<T> {
                     e.consume();
                 }
             } else {
-                // Cualquier tecla de edición rompe la selección para que puedas borrar o seguir
-                // escribiendo
                 combo.getSelectionModel().clearSelection();
-            }
-
-            if (e.getCode() == KeyCode.DOWN) {
-                if (!combo.isShowing())
+                if (e.getCode() == KeyCode.DOWN && !combo.isShowing())
                     combo.show();
             }
         });
 
-        // Al seleccionar desde la lista, reflejar en el editor
         combo.getSelectionModel().selectedItemProperty().addListener((o, a, v) -> {
-            if (updating)
-                return;
-            if (v == null)
+            if (updating || v == null)
                 return;
             accept(v);
         });
@@ -102,24 +90,18 @@ public class AutoCompleteCombo<T> {
             combo.hide();
             return;
         }
-
         ObservableList<T> filtered = FXCollections.observableArrayList();
-        for (T t : master) {
-            String s = norm(textOf(t));
-            if (s.startsWith(p))
+        for (T t : master)
+            if (norm(textOf(t)).startsWith(p))
                 filtered.add(t);
-        }
-
         updating = true;
-        combo.setItems(filtered.isEmpty() ? FXCollections.observableArrayList() : filtered);
+        combo.setItems(filtered);
         updating = false;
-
         if (!filtered.isEmpty()) {
             if (!combo.isShowing())
                 combo.show();
-        } else {
+        } else
             combo.hide();
-        }
     }
 
     private void accept(T value) {
@@ -129,7 +111,6 @@ public class AutoCompleteCombo<T> {
         combo.getEditor().positionCaret(s.length());
         combo.getEditor().deselect();
         combo.getSelectionModel().select(value);
-        // Mantener catálogo completo para permitir seguir editando o borrar
         combo.setItems(master);
         updating = false;
         Platform.runLater(combo::hide);
@@ -139,10 +120,9 @@ public class AutoCompleteCombo<T> {
         String p = norm(prefix);
         if (p.isEmpty())
             return null;
-        for (T t : master) {
+        for (T t : master)
             if (norm(textOf(t)).startsWith(p))
                 return t;
-        }
         return null;
     }
 

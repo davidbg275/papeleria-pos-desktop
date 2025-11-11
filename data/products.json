@@ -15,7 +15,7 @@
     "unidad": "paquete",
     "contenido": 100.0,
     "precio": 32.0,
-    "stock": 34.0
+    "stock": 33.0
   },
   {
     "sku": "HO-003",
@@ -186,7 +186,7 @@
     "unidad": "pieza",
     "contenido": 1.0,
     "precio": 20.0,
-    "stock": 0.0
+    "stock": 1.0
   },
   {
     "sku": "CA-001",
@@ -267,6 +267,15 @@
     "unidad": "Unidad",
     "contenido": 1.0,
     "precio": 3000.0,
+    "stock": 1.0
+  },
+  {
+    "sku": "NU-001",
+    "nombre": "nuevaproduccion",
+    "categoria": "Producción",
+    "unidad": "Unidad",
+    "contenido": 1.0,
+    "precio": 4800.0,
     "stock": 1.0
   }
 ]
