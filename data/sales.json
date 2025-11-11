@@ -820,5 +820,21 @@
     "total": 50.0,
     "efectivo": 50.0,
     "cambio": 0.0
+  },
+  {
+    "id": "48096cc2",
+    "fecha": "2025-11-11T01:11:36.309972161",
+    "items": [
+      {
+        "sku": "TE-002",
+        "nombre": "tenedor",
+        "cantidadBase": 1.0,
+        "precioUnitario": 300.0,
+        "subtotal": 300.0
+      }
+    ],
+    "total": 300.0,
+    "efectivo": 400.0,
+    "cambio": 100.0
   }
 ]

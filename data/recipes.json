@@ -24,5 +24,18 @@
         "cantidadBase": 10.0
       }
     ]
+  },
+  {
+    "nombre": "tenedor",
+    "sku": "TE-002",
+    "margen": 50.0,
+    "precioDirecto": 0.0,
+    "manoObraUnit": 0.0,
+    "items": [
+      {
+        "sku": "MT-001",
+        "cantidadBase": 10.0
+      }
+    ]
   }
 ]

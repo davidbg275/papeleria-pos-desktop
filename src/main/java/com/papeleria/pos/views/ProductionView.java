@@ -34,6 +34,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import com.papeleria.pos.services.RecipesStore;
+import javafx.collections.FXCollections;
+import com.papeleria.pos.components.AutoCompleteCombo;
+import com.papeleria.pos.models.Product;
 
 public class ProductionView extends BorderPane {
 
@@ -68,6 +71,7 @@ public class ProductionView extends BorderPane {
     private final Spinner<Integer> numeroLotes = new Spinner<>(1, 1_000_000, 1, 1);
 
     // Materiales
+    private AutoCompleteCombo<Product> acMat;
     private final ComboBox<Product> material = new ComboBox<>();
     private final ChoiceBox<String> presentacion = new ChoiceBox<>();
     private final Spinner<Double> cantPorProducto = new Spinner<>(0.01, 1_000_000.0, 1.0, 1.0);
@@ -142,10 +146,10 @@ public class ProductionView extends BorderPane {
         });
 
         // Inventario cambiado -> refrescar sin reiniciar
-        bus.subscribe(EventBus.Topic.INVENTORY_CHANGED, ev -> Platform.runLater(() -> {
-            cargarCatalogo();
-            renderInsumos();
-            recalc();
+        bus.subscribe(EventBus.Topic.INVENTORY_CHANGED, ev -> javafx.application.Platform.runLater(() -> {
+            cargarCatalogo(); // recarga items y dataset del autocompletado
+            renderInsumos(); // re-pinta chips con stock actualizado
+            updateDisponible(); // refresca etiqueta de disponible del editor
         }));
 
         cargarCatalogo();
@@ -226,11 +230,17 @@ public class ProductionView extends BorderPane {
             @Override
             public Product fromString(String s) {
                 return inventory.list().stream()
-                        .filter(p -> (p.getNombre() + " (" + p.getSku() + ")").equalsIgnoreCase(s)).findFirst()
-                        .orElse(null);
+                        .filter(p -> (p.getNombre() + " (" + p.getSku() + ")").equalsIgnoreCase(s))
+                        .findFirst().orElse(null);
             }
         });
-        new AutoCompleteCombo<>(material, FXCollections.observableArrayList(inventory.list()),
+
+        // catálogo inicial
+        var listaInicial = javafx.collections.FXCollections.observableArrayList(inventory.list());
+        // guarda referencia al autocompletado para refrescarlo después
+        acMat = new com.papeleria.pos.components.AutoCompleteCombo<>(
+                material,
+                listaInicial,
                 p -> p.getNombre() + " (" + p.getSku() + ")");
 
         presentacion.getItems().setAll("Unidad");
@@ -606,9 +616,30 @@ public class ProductionView extends BorderPane {
     /* =================== Materiales =================== */
 
     private void cargarCatalogo() {
-        var list = new ArrayList<>(inventory.list());
-        list.sort(Comparator.comparing(Product::getNombre, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)));
-        material.setItems(FXCollections.observableArrayList(list));
+        var list = new java.util.ArrayList<>(inventory.list());
+        list.sort(java.util.Comparator.comparing(
+                com.papeleria.pos.models.Product::getNombre,
+                java.util.Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)));
+
+        Product sel = material.getValue();
+
+        // actualiza items visibles del ComboBox
+        material.getItems().setAll(list);
+
+        // refresca dataset del autocompletado
+        if (acMat != null) {
+            acMat.refreshData(javafx.collections.FXCollections.observableArrayList(list));
+        }
+
+        // re-selecciona por SKU si había algo elegido
+        if (sel != null) {
+            for (var it : material.getItems()) {
+                if (it.getSku() != null && it.getSku().equalsIgnoreCase(sel.getSku())) {
+                    material.setValue(it);
+                    break;
+                }
+            }
+        }
     }
 
     private void agregarInsumo() {

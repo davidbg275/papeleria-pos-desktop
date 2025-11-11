@@ -1,5 +1,149 @@
 [
   {
+    "sku": "AR-001",
+    "nombre": "arete",
+    "categoria": "Producción",
+    "unidad": "Unidad",
+    "contenido": 1.0,
+    "precio": 80.0,
+    "stock": 2.0
+  },
+  {
+    "sku": "SI-001",
+    "nombre": "Barra de Silicón Transparente 11mm (caja 20)",
+    "categoria": "Manualidades",
+    "unidad": "caja",
+    "contenido": 20.0,
+    "precio": 140.0,
+    "stock": 12.0
+  },
+  {
+    "sku": "SI-002",
+    "nombre": "Barra de Silicón Transparente 7mm (caja 30)",
+    "categoria": "Manualidades",
+    "unidad": "caja",
+    "contenido": 30.0,
+    "precio": 150.0,
+    "stock": 9.0
+  },
+  {
+    "sku": "BO-001",
+    "nombre": "Borrador Pelikan 20",
+    "categoria": "Escritura",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 5.0,
+    "stock": 60.0
+  },
+  {
+    "sku": "BR-001",
+    "nombre": "Bronce",
+    "categoria": "papeleria",
+    "unidad": "paquete",
+    "contenido": 10.0,
+    "precio": 100.0,
+    "stock": 10.0
+  },
+  {
+    "sku": "EN-002",
+    "nombre": "Cajita de grapas 24/6 (1000 pzas)",
+    "categoria": "Oficina",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 20.0,
+    "stock": 35.0
+  },
+  {
+    "sku": "CA-001",
+    "nombre": "Cartulina Blanca",
+    "categoria": "Papelería",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 5.5,
+    "stock": 75.0
+  },
+  {
+    "sku": "CA-002",
+    "nombre": "Cartulina Roja",
+    "categoria": "Papelería",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 5.5,
+    "stock": 60.0
+  },
+  {
+    "sku": "CI-001",
+    "nombre": "Cinta Adhesiva Transparente 18mm (paquete 6)",
+    "categoria": "Oficina",
+    "unidad": "paquete",
+    "contenido": 6.0,
+    "precio": 52.0,
+    "stock": 14.0
+  },
+  {
+    "sku": "CI-002",
+    "nombre": "Cinta Masking Tape 24mm (paquete 6)",
+    "categoria": "Oficina",
+    "unidad": "paquete",
+    "contenido": 6.0,
+    "precio": 66.0,
+    "stock": 10.0
+  },
+  {
+    "sku": "CO-003",
+    "nombre": "collar-oro",
+    "categoria": "Producción",
+    "unidad": "Unidad",
+    "contenido": 1.0,
+    "precio": 200.0,
+    "stock": 2.0
+  },
+  {
+    "sku": "CO-001",
+    "nombre": "Collar-plata",
+    "categoria": "Producción",
+    "unidad": "Unidad",
+    "contenido": 1.0,
+    "precio": 3300.0,
+    "stock": 1.0
+  },
+  {
+    "sku": "CO-002",
+    "nombre": "collarplata2",
+    "categoria": "Producción",
+    "unidad": "Unidad",
+    "contenido": 1.0,
+    "precio": 150.0,
+    "stock": 1.0
+  },
+  {
+    "sku": "CU-002",
+    "nombre": "Cuaderno Profesional Cuadro Grande",
+    "categoria": "Escolar",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 45.0,
+    "stock": 55.0
+  },
+  {
+    "sku": "CU-001",
+    "nombre": "Cuaderno Profesional Raya Scribe",
+    "categoria": "Escolar",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 45.0,
+    "stock": 50.0
+  },
+  {
+    "sku": "EN-001",
+    "nombre": "Engrapadora Metálica Mediana",
+    "categoria": "Oficina",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 95.0,
+    "stock": 15.0
+  },
+  {
     "sku": "HO-001",
     "nombre": "Hojas Blancas Carta (500 hojas)",
     "categoria": "Papelería",
@@ -36,60 +180,6 @@
     "stock": 18.0
   },
   {
-    "sku": "PL-001",
-    "nombre": "Pluma Azul BIC Cristal (caja 12)",
-    "categoria": "Escritura",
-    "unidad": "caja",
-    "contenido": 12.0,
-    "precio": 48.0,
-    "stock": 20.0
-  },
-  {
-    "sku": "PL-002",
-    "nombre": "Pluma Roja BIC Cristal (caja 12)",
-    "categoria": "Escritura",
-    "unidad": "caja",
-    "contenido": 12.0,
-    "precio": 48.0,
-    "stock": 16.0
-  },
-  {
-    "sku": "PL-003",
-    "nombre": "Pluma Negra BIC Cristal (caja 12)",
-    "categoria": "Escritura",
-    "unidad": "caja",
-    "contenido": 12.0,
-    "precio": 48.0,
-    "stock": 22.0
-  },
-  {
-    "sku": "LA-001",
-    "nombre": "Lápiz No.2 Mirado",
-    "categoria": "Escritura",
-    "unidad": "pieza",
-    "contenido": 1.0,
-    "precio": 3.0,
-    "stock": 200.0
-  },
-  {
-    "sku": "BO-001",
-    "nombre": "Borrador Pelikan 20",
-    "categoria": "Escritura",
-    "unidad": "pieza",
-    "contenido": 1.0,
-    "precio": 5.0,
-    "stock": 60.0
-  },
-  {
-    "sku": "LI-001",
-    "nombre": "Listón Rojo 1cm x 10m",
-    "categoria": "Manualidades",
-    "unidad": "rollo",
-    "contenido": 10.0,
-    "precio": 26.0,
-    "stock": 25.0
-  },
-  {
     "sku": "LI-002",
     "nombre": "Listón Azul 2cm x 10m",
     "categoria": "Manualidades",
@@ -108,49 +198,22 @@
     "stock": 10.0
   },
   {
-    "sku": "TE-001",
-    "nombre": "Tela Fieltro Negro (metro)",
+    "sku": "LI-001",
+    "nombre": "Listón Rojo 1cm x 10m",
     "categoria": "Manualidades",
-    "unidad": "m",
-    "contenido": 1.0,
-    "precio": 75.0,
-    "stock": 120.0
+    "unidad": "rollo",
+    "contenido": 10.0,
+    "precio": 26.0,
+    "stock": 25.0
   },
   {
-    "sku": "CU-001",
-    "nombre": "Cuaderno Profesional Raya Scribe",
-    "categoria": "Escolar",
+    "sku": "LA-001",
+    "nombre": "Lápiz No.2 Mirado",
+    "categoria": "Escritura",
     "unidad": "pieza",
     "contenido": 1.0,
-    "precio": 45.0,
-    "stock": 50.0
-  },
-  {
-    "sku": "CU-002",
-    "nombre": "Cuaderno Profesional Cuadro Grande",
-    "categoria": "Escolar",
-    "unidad": "pieza",
-    "contenido": 1.0,
-    "precio": 45.0,
-    "stock": 55.0
-  },
-  {
-    "sku": "TI-001",
-    "nombre": "Tijeras Escolares Maped",
-    "categoria": "Escolar",
-    "unidad": "pieza",
-    "contenido": 1.0,
-    "precio": 35.0,
-    "stock": 20.0
-  },
-  {
-    "sku": "PE-001",
-    "nombre": "Pegamento en Barra 40g",
-    "categoria": "Escolar",
-    "unidad": "pieza",
-    "contenido": 1.0,
-    "precio": 22.0,
-    "stock": 40.0
+    "precio": 3.0,
+    "stock": 200.0
   },
   {
     "sku": "MA-001",
@@ -162,111 +225,12 @@
     "stock": 65.0
   },
   {
-    "sku": "MA-002",
-    "nombre": "Resaltador Amarillo",
-    "categoria": "Oficina",
-    "unidad": "pieza",
-    "contenido": 1.0,
-    "precio": 15.0,
-    "stock": 80.0
-  },
-  {
-    "sku": "EN-001",
-    "nombre": "Engrapadora Metálica Mediana",
-    "categoria": "Oficina",
-    "unidad": "pieza",
-    "contenido": 1.0,
-    "precio": 95.0,
-    "stock": 15.0
-  },
-  {
-    "sku": "EN-002",
-    "nombre": "Cajita de grapas 24/6 (1000 pzas)",
-    "categoria": "Oficina",
-    "unidad": "pieza",
-    "contenido": 1.0,
-    "precio": 20.0,
-    "stock": 35.0
-  },
-  {
-    "sku": "CA-001",
-    "nombre": "Cartulina Blanca",
-    "categoria": "Papelería",
-    "unidad": "pieza",
-    "contenido": 1.0,
-    "precio": 5.5,
-    "stock": 75.0
-  },
-  {
-    "sku": "CA-002",
-    "nombre": "Cartulina Roja",
-    "categoria": "Papelería",
-    "unidad": "pieza",
-    "contenido": 1.0,
-    "precio": 5.5,
-    "stock": 60.0
-  },
-  {
-    "sku": "SI-001",
-    "nombre": "Barra de Silicón Transparente 11mm (caja 20)",
-    "categoria": "Manualidades",
-    "unidad": "caja",
-    "contenido": 20.0,
-    "precio": 140.0,
-    "stock": 12.0
-  },
-  {
-    "sku": "SI-002",
-    "nombre": "Barra de Silicón Transparente 7mm (caja 30)",
-    "categoria": "Manualidades",
-    "unidad": "caja",
-    "contenido": 30.0,
-    "precio": 150.0,
-    "stock": 9.0
-  },
-  {
-    "sku": "CI-001",
-    "nombre": "Cinta Adhesiva Transparente 18mm (paquete 6)",
-    "categoria": "Oficina",
-    "unidad": "paquete",
-    "contenido": 6.0,
-    "precio": 52.0,
-    "stock": 14.0
-  },
-  {
-    "sku": "CI-002",
-    "nombre": "Cinta Masking Tape 24mm (paquete 6)",
-    "categoria": "Oficina",
-    "unidad": "paquete",
-    "contenido": 6.0,
-    "precio": 66.0,
-    "stock": 10.0
-  },
-  {
-    "sku": "PT-909",
-    "nombre": "Plata",
+    "sku": "MT-001",
+    "nombre": "METAL",
     "categoria": "papeleria",
     "unidad": "paquete",
     "contenido": 10.0,
     "precio": 100.0,
-    "stock": 1.8
-  },
-  {
-    "sku": "CO-001",
-    "nombre": "Collar-plata",
-    "categoria": "Producción",
-    "unidad": "Unidad",
-    "contenido": 1.0,
-    "precio": 3300.0,
-    "stock": 1.0
-  },
-  {
-    "sku": "CO-002",
-    "nombre": "collarplata2",
-    "categoria": "Producción",
-    "unidad": "Unidad",
-    "contenido": 1.0,
-    "precio": 150.0,
     "stock": 1.0
   },
   {
@@ -279,21 +243,84 @@
     "stock": 5.0
   },
   {
-    "sku": "CO-003",
-    "nombre": "collar-oro",
+    "sku": "PE-001",
+    "nombre": "Pegamento en Barra 40g",
+    "categoria": "Escolar",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 22.0,
+    "stock": 40.0
+  },
+  {
+    "sku": "PT-909",
+    "nombre": "Plata",
+    "categoria": "papeleria",
+    "unidad": "paquete",
+    "contenido": 10.0,
+    "precio": 100.0,
+    "stock": 1.8
+  },
+  {
+    "sku": "PL-001",
+    "nombre": "Pluma Azul BIC Cristal (caja 12)",
+    "categoria": "Escritura",
+    "unidad": "caja",
+    "contenido": 12.0,
+    "precio": 48.0,
+    "stock": 20.0
+  },
+  {
+    "sku": "PL-003",
+    "nombre": "Pluma Negra BIC Cristal (caja 12)",
+    "categoria": "Escritura",
+    "unidad": "caja",
+    "contenido": 12.0,
+    "precio": 48.0,
+    "stock": 22.0
+  },
+  {
+    "sku": "PL-002",
+    "nombre": "Pluma Roja BIC Cristal (caja 12)",
+    "categoria": "Escritura",
+    "unidad": "caja",
+    "contenido": 12.0,
+    "precio": 48.0,
+    "stock": 16.0
+  },
+  {
+    "sku": "MA-002",
+    "nombre": "Resaltador Amarillo",
+    "categoria": "Oficina",
+    "unidad": "pieza",
+    "contenido": 1.0,
+    "precio": 15.0,
+    "stock": 80.0
+  },
+  {
+    "sku": "TE-001",
+    "nombre": "Tela Fieltro Negro (metro)",
+    "categoria": "Manualidades",
+    "unidad": "m",
+    "contenido": 1.0,
+    "precio": 75.0,
+    "stock": 120.0
+  },
+  {
+    "sku": "TE-002",
+    "nombre": "tenedor",
     "categoria": "Producción",
     "unidad": "Unidad",
     "contenido": 1.0,
-    "precio": 200.0,
+    "precio": 300.0,
     "stock": 2.0
   },
   {
-    "sku": "AR-001",
-    "nombre": "arete",
-    "categoria": "Producción",
-    "unidad": "Unidad",
+    "sku": "TI-001",
+    "nombre": "Tijeras Escolares Maped",
+    "categoria": "Escolar",
+    "unidad": "pieza",
     "contenido": 1.0,
-    "precio": 80.0,
-    "stock": 2.0
+    "precio": 35.0,
+    "stock": 20.0
   }
 ]
