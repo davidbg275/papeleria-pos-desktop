@@ -186,7 +186,7 @@
     "unidad": "pieza",
     "contenido": 1.0,
     "precio": 20.0,
-    "stock": 1.0
+    "stock": 0.0
   },
   {
     "sku": "CA-001",
@@ -258,7 +258,7 @@
     "unidad": "Unidad",
     "contenido": 1.0,
     "precio": 3000.0,
-    "stock": 1.0
+    "stock": 2.0
   },
   {
     "sku": "FL-003",
@@ -277,5 +277,23 @@
     "contenido": 1.0,
     "precio": 4800.0,
     "stock": 2.0
+  },
+  {
+    "sku": "HZ-002",
+    "nombre": "Silicio",
+    "categoria": "Papeleria",
+    "unidad": "Paquete",
+    "contenido": 10.0,
+    "precio": 50.0,
+    "stock": 2.0
+  },
+  {
+    "sku": "CH-001",
+    "nombre": "Chip de silicio",
+    "categoria": "Producción",
+    "unidad": "Unidad",
+    "contenido": 1.0,
+    "precio": 8000.0,
+    "stock": 1.0
   }
 ]
