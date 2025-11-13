@@ -45,10 +45,12 @@ public class InventoryView extends VBox {
         sub.getStyleClass().add("subtle");
 
         // KPIs
-        HBox kpis = new HBox(12, kpi("Total Productos", String.valueOf(service.list().size()), "📦"),
-                kpi("Stock Bajo", String.valueOf(contarBajo()), "⚠️"),
-                kpi("Sin Stock", String.valueOf(contarCero()), "⛔"),
-                kpi("Valor Total", "$", "💲"));
+        HBox kpis = new HBox(20,
+                kpi("Total Productos", String.valueOf(service.list().size()), "📦", "kpi-green"),
+                kpi("Stock Bajo", String.valueOf(contarBajo()), "⚠️", "kpi-orange"),
+                kpi("Sin Stock", String.valueOf(contarCero()), "⛔", "kpi-red"),
+                kpi("Valor Total", "$", "💲", "kpi-blue"));
+
         // Buscador + acciones
         search.setPromptText("Buscar por nombre o código...");
         Button btnAddEdit = new Button("Agregar/Editar");
@@ -144,17 +146,24 @@ public class InventoryView extends VBox {
         refresh();
     }
 
-    private HBox kpi(String title, String value, String icon) {
+    private HBox kpi(String title, String value, String icon, String colorClass) {
+
+        Label i = new Label(icon);
+        i.getStyleClass().addAll("kpi-icon");
+
         Label t = new Label(title);
-        t.getStyleClass().add("subtle");
+        t.getStyleClass().add("kpi-title");
+
         Label v = new Label(value);
-        v.setStyle("-fx-font-size: 22px; -fx-font-weight: 900;");
-        HBox h = new HBox(10, new Label(icon), new VBox(2, t, v));
-        HBox card = new HBox(h);
-        card.getStyleClass().add("kpi");
-        card.setPadding(new Insets(14));
-        card.setPrefWidth(220);
-        return card;
+        v.getStyleClass().add("kpi-value");
+
+        VBox texts = new VBox(2, t, v);
+
+        HBox box = new HBox(12, i, texts);
+        box.getStyleClass().addAll("kpi-box", colorClass);
+        box.setPrefWidth(220);
+
+        return box;
     }
 
     private void actualizarKpis(HBox kpis) {
@@ -178,11 +187,45 @@ public class InventoryView extends VBox {
     }
 
     private void setupTable() {
+        // Política de tamaño y estilo base
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        table.getStyleClass().add("inventory-table");
+        table.setPrefHeight(520);
+        table.setPlaceholder(new Label("Sin productos. Usa \"Agregar/Editar\" para capturar el primero."));
 
+        // Colores por fila según stock
+        table.setRowFactory(tv -> new TableRow<>() {
+            @Override
+            protected void updateItem(Product item, boolean empty) {
+                super.updateItem(item, empty);
+                getStyleClass().removeAll("row-low", "row-zero");
+
+                if (empty || item == null) {
+                    setTooltip(null);
+                    return;
+                }
+
+                // Tooltip con resumen rápido
+                String tip = item.getSku() + " • " + item.getNombre()
+                        + "\nCategoría: " + safe(item.getCategoria())
+                        + "\nUnidad: " + unidadPretty(item)
+                        + "\nContenido: " + contenidoPretty(item)
+                        + "\nStock: " + String.format("%.2f", item.getStock());
+                setTooltip(new Tooltip(tip));
+
+                double s = item.getStock();
+                if (s <= 0.0) {
+                    getStyleClass().add("row-zero");
+                } else if (s <= 5.0) {
+                    getStyleClass().add("row-low");
+                }
+            }
+        });
+
+        // ===== COLUMNAS =====
         TableColumn<Product, String> cCodigo = new TableColumn<>("Código");
         cCodigo.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getSku()));
-        cCodigo.setMinWidth(100);
+        cCodigo.setMinWidth(90);
 
         TableColumn<Product, String> cNombre = new TableColumn<>("Producto");
         cNombre.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getNombre()));
@@ -192,23 +235,21 @@ public class InventoryView extends VBox {
         cCat.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getCategoria()));
         cCat.setMinWidth(140);
 
-        // NUEVOS
         TableColumn<Product, String> cUnidad = new TableColumn<>("Unidad");
         cUnidad.setCellValueFactory(d -> new SimpleStringProperty(unidadPretty(d.getValue())));
-        cUnidad.setMinWidth(100);
+        cUnidad.setMinWidth(90);
 
         TableColumn<Product, String> cContenido = new TableColumn<>("Contenido");
         cContenido.setCellValueFactory(d -> new SimpleStringProperty(contenidoPretty(d.getValue())));
-        cContenido.setMinWidth(140);
+        cContenido.setMinWidth(120);
 
         TableColumn<Product, String> cPresent = new TableColumn<>("Presentaciones");
         cPresent.setCellValueFactory(d -> new SimpleStringProperty(presentaciones(d.getValue())));
-        cPresent.setMinWidth(200);
+        cPresent.setMinWidth(180);
 
-        // Stock numérico con color
         TableColumn<Product, Number> cStock = new TableColumn<>("Stock");
         cStock.setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getStock()));
-        cStock.setMinWidth(90);
+        cStock.setMinWidth(80);
         cStock.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(Number v, boolean empty) {
@@ -220,30 +261,56 @@ public class InventoryView extends VBox {
                 }
                 double s = v.doubleValue();
                 setText(String.format("%.2f", s));
-                String color = (s <= 0.0) ? "#dc2626" : (s <= 5.0 ? "#ea580c" : "#16a34a");
+                setAlignment(Pos.CENTER_RIGHT);
+
+                String color = (s <= 0.0) ? "#dc2626"
+                        : (s <= 5.0 ? "#ea580c" : "#16a34a");
                 setStyle("-fx-text-fill: " + color + "; -fx-font-weight: 700;");
             }
         });
 
-        // Equivalente en unidad base/pieza/hoja/metro (solo si aplica)
         TableColumn<Product, String> cEquiv = new TableColumn<>("Equiv. base");
         cEquiv.setCellValueFactory(d -> new SimpleStringProperty(equivBase(d.getValue())));
-        cEquiv.setMinWidth(140);
+        cEquiv.setMinWidth(130);
 
         TableColumn<Product, Number> cPrecioUnidad = new TableColumn<>("Precio (unidad)");
         cPrecioUnidad.setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getPrecio()));
         cPrecioUnidad.setMinWidth(120);
+        cPrecioUnidad.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Number v, boolean empty) {
+                super.updateItem(v, empty);
+                if (empty || v == null) {
+                    setText(null);
+                    return;
+                }
+                setAlignment(Pos.CENTER_RIGHT);
+                setText(String.format("$ %, .2f", v.doubleValue()).replace(" ,", ","));
+            }
+        });
 
         TableColumn<Product, Number> cPrecioMenor = new TableColumn<>("Precio (menor)");
         cPrecioMenor.setCellValueFactory(d -> new SimpleDoubleProperty(precioMenor(d.getValue())));
         cPrecioMenor.setMinWidth(120);
+        cPrecioMenor.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Number v, boolean empty) {
+                super.updateItem(v, empty);
+                if (empty || v == null || v.doubleValue() <= 0.0) {
+                    setText("—");
+                    setAlignment(Pos.CENTER_RIGHT);
+                    return;
+                }
+                setAlignment(Pos.CENTER_RIGHT);
+                setText(String.format("$ %, .2f", v.doubleValue()).replace(" ,", ","));
+            }
+        });
 
         table.getColumns().setAll(
                 cCodigo, cNombre, cCat,
                 cUnidad, cContenido, cPresent,
                 cStock, cEquiv,
                 cPrecioUnidad, cPrecioMenor);
-        table.setPrefHeight(520);
     }
 
     private void showEditDialog(Product editable) {
@@ -255,27 +322,57 @@ public class InventoryView extends VBox {
         grid.setHgap(10);
         grid.setVgap(10);
         grid.setPadding(new Insets(12));
+
+        // === CAMPOS ===
         TextField sku = new TextField();
         TextField nombre = new TextField();
-        TextField categoria = new TextField();
-        TextField unidad = new TextField();
+
+        // === CATEGORÍAS PREDEFINIDAS ===
+        ComboBox<String> categoria = new ComboBox<>();
+        categoria.setEditable(true);
+        categoria.getItems().setAll(
+                "Papelería",
+                "Oficina",
+                "Escolar",
+                "Manualidades",
+                "Arte",
+                "Producción",
+                "Otros");
+        categoria.setPromptText("Categoría");
+
+        // === UNIDADES PREDEFINIDAS ===
+        ComboBox<String> unidad = new ComboBox<>();
+        unidad.setEditable(true);
+        unidad.getItems().setAll(
+                "Unidad",
+                "Pza",
+                "Hoja",
+                "Paquete",
+                "Caja",
+                "Rollo",
+                "Metro",
+                "Centímetro");
+        unidad.setPromptText("Unidad");
+
         TextField contenido = new TextField();
         TextField precio = new TextField();
         TextField stock = new TextField();
+
         sku.setPromptText("Código (sku)");
         nombre.setPromptText("Nombre");
-        categoria.setPromptText("Categoría");
-        unidad.setPromptText("Unidad (pza, hoja, m...)");
         contenido.setPromptText("Contenido (0 si no aplica)");
         precio.setPromptText("Precio unidad base");
         stock.setPromptText("Stock unidad base");
 
+        // === AL EDITAR, CARGAR VALORES ===
         if (editable != null) {
             sku.setText(editable.getSku());
             sku.setDisable(true);
+
             nombre.setText(editable.getNombre());
-            categoria.setText(editable.getCategoria());
-            unidad.setText(editable.getUnidad());
+            categoria.setValue(editable.getCategoria());
+            unidad.setValue(editable.getUnidad());
+
             contenido.setText(String.valueOf(editable.getContenido()));
             precio.setText(String.valueOf(editable.getPrecio()));
             stock.setText(String.valueOf(editable.getStock()));
@@ -290,25 +387,30 @@ public class InventoryView extends VBox {
         grid.addRow(6, new Label("Stock"), stock);
 
         dialog.getDialogPane().setContent(grid);
+
         dialog.setResultConverter(bt -> {
             if (bt == ButtonType.OK) {
                 try {
                     String _sku = sku.getText().trim();
                     String _nombre = nombre.getText().trim();
-                    String _cat = categoria.getText().trim();
-                    String _uni = unidad.getText().trim();
+                    String _cat = categoria.getValue() == null ? "" : categoria.getValue().trim();
+                    String _uni = unidad.getValue() == null ? "" : unidad.getValue().trim();
                     double _cont = Double.parseDouble(contenido.getText().trim());
                     double _pre = Double.parseDouble(precio.getText().trim());
                     double _stk = Double.parseDouble(stock.getText().trim());
+
                     if (_sku.isEmpty() || _nombre.isEmpty())
                         return null;
+
                     return new Product(_sku, _nombre, _cat, _uni, _cont, _pre, _stk);
+
                 } catch (Exception ex) {
                     return null;
                 }
             }
             return null;
         });
+
         Optional<Product> result = dialog.showAndWait();
         result.ifPresent(service::upsert);
     }
