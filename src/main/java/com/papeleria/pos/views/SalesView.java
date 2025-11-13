@@ -1,6 +1,5 @@
 package com.papeleria.pos.views;
 
-import com.microsoft.schemas.compatibility.AlternateContentDocument.AlternateContent.Choice;
 import com.papeleria.pos.components.AlertBanner;
 import com.papeleria.pos.models.Product;
 import com.papeleria.pos.models.Sale;
@@ -47,29 +46,45 @@ public class SalesView extends BorderPane {
 
         // ---- Izquierda (título + filtro + grilla de cards) ----
         VBox left = new VBox(12);
+        left.setPadding(new Insets(6));
+        left.setFillWidth(true); // <- que se estire
         Label title = new Label("Punto de Venta");
         title.getStyleClass().add("h1");
         Label subtitle = new Label("Busca productos y gestiona tu carrito de compras");
         subtitle.getStyleClass().add("subtle");
+
         filtro.setPromptText("Buscar por código o nombre del producto...");
         filtro.textProperty().addListener((o, old, v) -> renderGrid());
-        grid.setPrefWrapLength(760);
+
+        grid.setHgap(12);
+        grid.setVgap(12);
+        grid.setPrefWrapLength(0); // <- dejamos que el ancho lo decida el ScrollPane
+
         ScrollPane sc = new ScrollPane(grid);
-        sc.setFitToWidth(true);
+        sc.setFitToWidth(true); // <- ocupa todo el ancho disponible
+        sc.setFitToHeight(true);
+        sc.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        sc.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         sc.setStyle("-fx-background-color: transparent;");
+        VBox.setVgrow(sc, Priority.ALWAYS); // <- se estira verticalmente
+
         left.getChildren().addAll(new VBox(4, title, subtitle), new HBox(filtro), sc);
-        left.setPadding(new Insets(6));
 
         // ---- Derecha (carrito) ----
         VBox right = new VBox(12);
         right.getStyleClass().add("cart");
+        right.setPadding(new Insets(6));
+        right.setPrefWidth(360); // ancho fijo para el carrito
+
         Label cartTitle = new Label("Carrito de Compras");
         cartTitle.getStyleClass().add("h1");
 
         cartTable.setItems(cart);
         cartTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+
         TableColumn<SaleItem, String> cProd = new TableColumn<>("Producto");
         cProd.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getNombre()));
+
         TableColumn<SaleItem, Number> cCant = new TableColumn<>("Cant.");
         cCant.setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getCantidadBase()));
         cCant.setCellFactory(col -> new TableCell<>() {
@@ -81,7 +96,7 @@ public class SalesView extends BorderPane {
                     return;
                 }
                 SaleItem it = getTableView().getItems().get(getIndex());
-                com.papeleria.pos.models.Product p = inventory.findBySku(it.getSku()).orElse(null);
+                Product p = inventory.findBySku(it.getSku()).orElse(null);
                 if (p == null) {
                     setText(String.format("%.3f", v.doubleValue()));
                     return;
@@ -90,14 +105,13 @@ public class SalesView extends BorderPane {
                 String u = (p.getUnidad() == null ? "" : p.getUnidad().trim().toLowerCase());
                 double contenido = Math.max(0.0, p.getContenido());
                 double qProd = it.getCantidadBase();
-
                 final double EPS = 1e-9;
                 String txt;
+
                 if ((u.equals("paquete") || u.equals("caja")) && contenido > 0) {
-                    double piezas = qProd * contenido; // piezas/hojas
+                    double piezas = qProd * contenido;
                     long entero = Math.round(piezas);
                     if (Math.abs(piezas - entero) < EPS) {
-                        // heurística: si el nombre contiene "hoja" usar "hoja(s)"
                         String name = p.getNombre() == null ? "" : p.getNombre().toLowerCase();
                         String menor = name.contains("hoja") ? "hoja" : "pieza";
                         txt = entero + " " + (entero == 1 ? menor : menor + "s");
@@ -113,7 +127,6 @@ public class SalesView extends BorderPane {
                 } else if (u.equals("m") || u.equals("metro") || u.equals("metros")) {
                     txt = String.format("%.2f m", qProd);
                 } else {
-                    // unidad suelta del producto (paquete/caja/rollo/pieza)
                     long entero = Math.round(qProd);
                     String label = switch (u) {
                         case "paquete" -> "paquete";
@@ -129,8 +142,10 @@ public class SalesView extends BorderPane {
 
         TableColumn<SaleItem, Number> cPrecio = new TableColumn<>("Precio");
         cPrecio.setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getPrecioUnitario()));
+
         TableColumn<SaleItem, Number> cSub = new TableColumn<>("Subtotal");
         cSub.setCellValueFactory(d -> new SimpleDoubleProperty(d.getValue().getSubtotal()));
+
         TableColumn<SaleItem, Void> cDel = new TableColumn<>("Quitar");
         cDel.setMinWidth(80);
         cDel.setCellFactory(col -> new TableCell<>() {
@@ -150,9 +165,11 @@ public class SalesView extends BorderPane {
                 setGraphic(empty ? null : btn);
             }
         });
-        cartTable.getColumns().setAll(cProd, cCant, cPrecio, cSub, cDel);
 
+        cartTable.getColumns().setAll(cProd, cCant, cPrecio, cSub, cDel);
         cartTable.setPrefHeight(380);
+        VBox.setVgrow(cartTable, Priority.ALWAYS);
+
         cartTable.setOnKeyPressed(ev -> {
             switch (ev.getCode()) {
                 case DELETE, BACK_SPACE -> {
@@ -177,31 +194,36 @@ public class SalesView extends BorderPane {
         cobrar.getStyleClass().add("success");
         Button limpiar = new Button("Limpiar Carrito");
         limpiar.getStyleClass().add("ghost");
-        VBox.setVgrow(cartTable, Priority.ALWAYS);
 
         right.getChildren().addAll(
-                cartTitle, cartTable, new Separator(), totalBox,
+                cartTitle,
+                cartTable,
+                new Separator(),
+                totalBox,
                 new HBox(8, new Label("Efectivo:"), efectivo),
                 new HBox(8, cobrar, limpiar));
 
-        setLeft(left);
-        setRight(right);
+        // ==== NUEVO: un solo contenedor central ====
+        HBox content = new HBox(16, left, right);
+        content.setFillHeight(true);
+        HBox.setHgrow(left, Priority.ALWAYS); // la parte izquierda se expande
+        setCenter(content);
         setPadding(new Insets(6));
-        BorderPane.setMargin(right, new Insets(6, 0, 6, 12));
+        HBox.setMargin(right, new Insets(6, 0, 6, 12));
 
         // Handlers principales
         cobrar.setOnAction(e -> cobrarAccion());
         limpiar.setOnAction(e -> {
             cart.clear();
             efectivo.clear();
-
             recalcTotal();
-            flash((VBox) getLeft(), AlertBanner.success("Carrito limpio"));
+            flash(left, AlertBanner.success("Carrito limpio"));
         });
 
         // Render inicial y refresco por eventos
         renderGrid();
-        bus.subscribe(EventBus.Topic.INVENTORY_CHANGED, e -> javafx.application.Platform.runLater(this::renderGrid));
+        bus.subscribe(EventBus.Topic.INVENTORY_CHANGED,
+                e -> javafx.application.Platform.runLater(this::renderGrid));
     }
 
     private void renderGrid() {
