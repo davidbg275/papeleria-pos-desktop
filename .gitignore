@@ -1,0 +1,11 @@
+# Ignorar carpeta compilada de Maven
+target/
+
+# Ignorar archivos temporales
+*.log
+*.tmp
+
+# Ignorar configuraciones locales
+.idea/
+.vscode/
+.DS_Store
